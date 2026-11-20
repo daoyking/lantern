@@ -22,9 +22,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 readonly APP_NAME="Lantern"
 readonly BUNDLE_ID="me.lantern.menubar"
-readonly VERSION="$(plutil -p Resources/Info.plist 2>/dev/null \
-    | grep -E 'CFBundleShortVersionString|CFBundleVersion' \
-    | head -2 | paste -sd- | sed 's/-//')"
+readonly VERSION="$({ plutil -extract CFBundleShortVersionString raw -o - Resources/Info.plist 2>/dev/null || echo '0.1.0'; })-$({ plutil -extract CFBundleVersion raw -o - Resources/Info.plist 2>/dev/null || echo '1'; })"
 readonly TARGET="arm64-apple-macosx14.0"
 readonly SDK="$(xcrun --sdk macosx --show-sdk-path)"
 
