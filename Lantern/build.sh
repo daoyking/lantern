@@ -6,7 +6,7 @@
 # completely avoids SPM manifest compilation which hits the CLT27 ModuleCache
 # sandbox restriction (/var/folders/.../C/clang/ModuleCache/).
 #
-# Commands: clean | build | sign | dmg | notarize | run | all
+# Commands: clean | build | sign | dmg | notarize | install | run | all
 # Usage:    bash build.sh all
 # =============================================================================
 
@@ -200,6 +200,33 @@ notarize() {
         --wait || log_warn "Notarization failed or credentials missing"
 }
 
+# ─── Install ───────────────────────────────────────────────────────────────────
+# Ad-hoc signed apps dragged from a DMG are blocked by Gatekeeper
+# ("this Mac can't verify this App"). Installing via this function clears
+# quarantine attributes, re-signs, and launches — no manual Finder steps.
+install_app() {
+    local config="${1:-release}"
+    local src=".build/${config}/${APP_NAME}.app"
+    local dst="/Applications/${APP_NAME}.app"
+    [[ -d "$src" ]] || log_error "App not built yet. Run 'bash build.sh build ${config}' first."
+
+    log_step "Installing ${APP_NAME} → /Applications …"
+    # Clear any stale process from a previous copy
+    pkill -f "${dst}/Contents/MacOS/${APP_NAME}" 2>/dev/null || true
+    rm -rf "$dst"
+    cp -R "$src" "$dst"
+
+    # Strip quarantine / Finder metadata that triggers Gatekeeper
+    xattr -cr "$dst" 2>/dev/null || true
+    # Re-sign ad-hoc so the copied bundle has a valid signature in its new location
+    codesign --force --deep --sign - "$dst" 2>/dev/null \
+        || log_warn "Re-sign failed (installing anyway)"
+
+    open "$dst"
+    log_info "✅ Installed and launched: ${dst}"
+    log_info "   If a stale copy in the menu bar remains, it was killed above."
+}
+
 # ─── Run ───────────────────────────────────────────────────────────────────────
 run_app() {
     local config="${1:-debug}"
@@ -221,6 +248,7 @@ case "$cmd" in
     sign)  sign "${1:-release}" ;;
     dmg)   create_dmg "${1:-release}" ;;
     notarize) notarize ;;
+    install) install_app "${1:-release}" ;;
     run)   run_app "${1:-debug}" ;;
     all)
         clean
@@ -231,5 +259,5 @@ case "$cmd" in
         log_info "   App:  .build/release/${APP_NAME}.app"
         ls -lh "${APP_NAME}"*.dmg 2>/dev/null && true
         ;;
-    *) log_error "Unknown command: $cmd  (use: clean|build|sign|dmg|notarize|run|all)" ;;
+    *) log_error "Unknown command: $cmd  (use: clean|build|sign|dmg|notarize|install|run|all)" ;;
 esac
