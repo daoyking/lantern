@@ -29,8 +29,17 @@ bash build.sh debug    # Debug binary for development
 bash build.sh release  # Optimized release binary
 bash build.sh dmg      # Create installer DMG
 bash build.sh sign     # Ad-hoc sign (Developer ID auto-detected if present)
-bash build.sh run      # Build and launch immediately
+bash build.sh install  # Install to /Applications + bypass Gatekeeper + launch
+bash build.sh run      # Launch built app in place (no install)
 ```
+
+### ⚠️ Don't drag the DMG app manually
+
+An ad-hoc signed app dragged from a DMG is blocked by Gatekeeper
+("This Mac can't verify this App"). Use `bash build.sh install` instead —
+it clears quarantine xattrs, re-signs in place and launches automatically.
+If you already dragged it and got the error, run `bash build.sh install`
+to repair the install; no need to re-download or re-build.
 
 ## Xcode 27.2 SDK fixes (commit `54d6360`)
 
