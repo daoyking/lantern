@@ -21,6 +21,7 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Core/FeatureService.swift \
     Sources/Lantern/Core/FeatureRuntime.swift \
     Sources/Lantern/Core/StringTable.swift \
+    Sources/Lantern/Core/PanelLayout.swift \
     Tests/main.swift
 
 echo "[TEST] Running…"

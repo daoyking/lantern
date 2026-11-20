@@ -23,6 +23,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     /// 应用面板窗口（懒加载）
     private var panelWindow: NSWindow?
+
+    /// True only when the panel window actually exists and is on screen.
+    /// Never derive this from persisted UserDefaults — a stale "true" from a
+    /// previous launch made clicks call hidePanel() on a nil window, so the
+    /// panel appeared impossible to open.
+    var isPanelVisible: Bool {
+        panelWindow?.isVisible ?? false
+    }
     
     // MARK: - NSApplicationDelegate
     
@@ -90,15 +98,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu?.addItem(applicationsMenuItem)
     }
     
-    /// 显示面板
+    /// 显示面板 —— 定位到菜单栏图标正下方，确保完整落在屏幕内
     func showPanel() {
-        guard panelWindow == nil || !panelWindow!.isVisible else { return }
-        
-        let hostingController = NSHostingController(rootView: MenuPanelView())
-        
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 400),
-            styleMask: [.titled, .closable, .nonactivatingPanel],
+        if let window = panelWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let screen = NSScreen.main ?? NSScreen.screens.first
+        let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let panelSize = PanelLayout.fittedSize(in: visible)
+
+        // Anchor below the status item when available; the pure helper
+        // guarantees the result stays inside `visible` (off-screen regression).
+        let buttonWindow = statusItemController.statusItemWindow
+        let origin = PanelLayout.origin(
+            in: visible,
+            anchorMidX: buttonWindow?.frame.midX,
+            anchorMinY: buttonWindow?.frame.minY
+        )
+
+        let contentRect = NSRect(origin: origin, size: panelSize)
+        let hostingView = NSHostingView(rootView: MenuPanelView())
+
+        let window = NSPanel(
+            contentRect: contentRect,
+            styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
         )
@@ -106,15 +131,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.isReleasedWhenClosed = false
         window.level = .popUpMenu
         window.backgroundColor = .clear
-        window.setFrameOrigin(NSPoint(
-            x: NSScreen.screens.first?.visibleFrame.maxX ?? 800 - 320,
-            y: NSScreen.screens.first?.visibleFrame.maxY ?? 800 - 400
-        ))
-        window.contentView = hostingController.view
-        
+        window.hasShadow = true
+        window.isMovableByWindowBackground = true
+        window.contentView = hostingView
+
         window.makeKeyAndOrderFront(nil)
         panelWindow = window
-        
+
         UserDefaults.standard.setValue(true, forKey: DefaultsKey.panelVisible.rawValue)
     }
     

@@ -108,5 +108,28 @@ for f in AppFeature.allCases {
     Check.that(FeatureCatalog.shared.metadata(for: f).displayPriority >= 0, "\(f.rawValue) 元数据异常")
 }
 
+print("▶ 11. 面板定位：任何屏幕尺寸都完全落在可见区域内（off-screen 回归）")
+let screenCases: [(name: String, screen: CGRect, anchorX: CGFloat?, anchorY: CGFloat?)] = [
+    ("普通 1440x900", CGRect(x: 0, y: 0, width: 1440, height: 900), 1350, 880),
+    ("菜单栏图标在正中央", CGRect(x: 0, y: 0, width: 1440, height: 900), 720, 880),
+    ("图标贴最左边缘", CGRect(x: 0, y: 0, width: 1440, height: 900), 10, 880),
+    ("图标贴最右边缘", CGRect(x: 0, y: 0, width: 1440, height: 900), 1435, 880),
+    ("无锚点（图标窗口未知）", CGRect(x: 0, y: 0, width: 1440, height: 900), nil, nil),
+    ("小屏 1024x768", CGRect(x: 0, y: 0, width: 1024, height: 768), 1000, 748),
+    ("屏幕比面板还小 300x200", CGRect(x: 0, y: 0, width: 300, height: 200), 150, 190),
+    ("带 Dock 偏移的可见区", CGRect(x: 0, y: 25, width: 1440, height: 850), 1400, 870),
+]
+for c in screenCases {
+    let o = PanelLayout.origin(in: c.screen, anchorMidX: c.anchorX, anchorMinY: c.anchorY)
+    Check.that(PanelLayout.isFullyVisible(origin: o, in: c.screen),
+               "\(c.name) 面板跑到屏幕外: origin=(\(o.x), \(o.y))")
+    Check.that(o.x >= 0 && o.y >= 0, "\(c.name) 坐标为负: (\(o.x), \(o.y))")
+}
+// The exact old bug: origin used visible.maxX/maxY directly → off-screen.
+let oldBugScreen = CGRect(x: 0, y: 0, width: 1440, height: 900)
+let oldBugOrigin = CGPoint(x: oldBugScreen.maxX, y: oldBugScreen.maxY)
+Check.that(!PanelLayout.isFullyVisible(origin: oldBugOrigin, in: oldBugScreen),
+           "旧 bug 坐标本应被判定为屏幕外（证明测试有效）")
+
 cleanFeaturePrefs()
 Check.finish()

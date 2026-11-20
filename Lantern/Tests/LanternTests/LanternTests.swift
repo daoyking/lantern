@@ -177,4 +177,26 @@ final class LanternTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(meta.displayPriority, 0)
         }
     }
+
+    // MARK: - Panel placement (off-screen regression)
+
+    /// The old code set the origin to visibleFrame.maxX/maxY, placing the
+    /// entire panel off-screen. Every computed origin must fit fully.
+    func testPanelAlwaysFullyOnScreen() {
+        let cases: [(CGRect, CGFloat?, CGFloat?)] = [
+            (CGRect(x: 0, y: 0, width: 1440, height: 900), 1350, 880),
+            (CGRect(x: 0, y: 0, width: 1440, height: 900), 720, 880),
+            (CGRect(x: 0, y: 0, width: 1440, height: 900), 10, 880),
+            (CGRect(x: 0, y: 0, width: 1440, height: 900), 1435, 880),
+            (CGRect(x: 0, y: 0, width: 1440, height: 900), nil, nil),
+            (CGRect(x: 0, y: 0, width: 1024, height: 768), 1000, 748),
+            (CGRect(x: 0, y: 0, width: 300, height: 200), 150, 190),
+            (CGRect(x: 0, y: 25, width: 1440, height: 850), 1400, 870),
+        ]
+        for (screen, ax, ay) in cases {
+            let origin = PanelLayout.origin(in: screen, anchorMidX: ax, anchorMinY: ay)
+            XCTAssertTrue(PanelLayout.isFullyVisible(origin: origin, in: screen),
+                          "panel off-screen for \(screen) anchor=\(String(describing: ax))")
+        }
+    }
 }

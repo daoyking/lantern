@@ -75,6 +75,7 @@ build() {
         Sources/Lantern/Core/FeatureRuntime.swift
         Sources/Lantern/Core/FeatureService.swift
         Sources/Lantern/Core/Permissions.swift
+        Sources/Lantern/Core/PanelLayout.swift
         Sources/Lantern/Core/StatusItemController.swift
         Sources/Lantern/Core/StringTable.swift
         Sources/Lantern/Services/ClipboardService.swift
