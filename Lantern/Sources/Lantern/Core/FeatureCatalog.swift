@@ -192,7 +192,7 @@ public final class FeatureCatalog {
         )
         map[.pasteAsPlainText] = FeatureMetadata(installedByDefault: true, displayPriority: 2)
         map[.syncClipboardAcrossDevices] = FeatureMetadata(
-            requiresPermission: .none,
+            requiresPermission: PermissionType.none,
             installedByDefault: false,
             displayPriority: 3
         )

@@ -260,6 +260,6 @@ public extension Permissions {
 
 /// Extension for AVAssetExportSession media type compatibility
 private extension AVMediaType {
-    static var video: AVMediaType { .init(rawValue: "vide")! }
-    static var audio: AVMediaType { .init(rawValue: "soun")! }
+    static var video: AVMediaType { .init(rawValue: "vide") }
+    static var audio: AVMediaType { .init(rawValue: "soun") }
 }

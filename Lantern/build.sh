@@ -70,6 +70,7 @@ build() {
     # Collect Swift sources
     local -a SOURCES=(
         Sources/Lantern/AppDelegate.swift
+        Sources/Lantern/LanternApp.swift
         Sources/Lantern/Core/AppFeature.swift
         Sources/Lantern/Core/DefaultsKey.swift
         Sources/Lantern/Core/FeatureCatalog.swift
@@ -97,13 +98,20 @@ build() {
     # Compile — parallel batch mode on all cores (see vorssaint-utils comment:
     # "without -j batches share parsing work across every core, keeping optimisation per-file")
     log_info "Compiling with $(sysctl -n hw.logicalcpu) cores, batch mode…"
+    # -disable-sandbox: lets SwiftUI macro plugin server run in sandboxed shells (DSH)
+    # -client_name AppKit: SwiftUICore.tbd only allows listed clients (AppKit/SwiftUI/...).
+    #   Manual swiftc builds produce "Lantern" which is not on that list, so ld refuses
+    #   to link SwiftUICore directly. Pretend to be AppKit to satisfy allowable-clients.
+    # -F SDK frameworks: CoreAudioTypes/CoreTransferable are auto-linked and must resolve.
     swiftc "$opt_flags" -incremental -enable-batch-mode \
+        -disable-sandbox \
         -j "$(sysctl -n hw.logicalcpu)" \
         -output-file-map "$file_map" \
         -target "$TARGET" -sdk "$SDK" \
         -module-name Lantern \
+        -F "$SDK/System/Library/Frameworks" \
         -framework SwiftUI \
-        -framework CoreTransferable \
+        -Xlinker -client_name -Xlinker AppKit \
         -Xcc -fPIC \
         "${SOURCES[@]}" \
         -o ".build/${mode}/${APP_NAME}"

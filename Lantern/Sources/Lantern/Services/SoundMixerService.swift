@@ -75,7 +75,7 @@ public final class SoundMixerService: BaseFeatureService {
         )
 
         var defaultDevice = AudioObjectID(kAudioObjectSystemObject)
-        let size = UInt32(MemoryLayout<AudioObjectID>.stride)
+        var size = UInt32(MemoryLayout<AudioObjectID>.stride)
         
         guard AudioObjectGetPropertyData(
             AudioObjectID(kAudioObjectSystemObject),
@@ -99,7 +99,7 @@ public final class SoundMixerService: BaseFeatureService {
         )
         
         var volume: Float32 = 0.5
-        let size = UInt32(MemoryLayout<Float32>.stride)
+        var size = UInt32(MemoryLayout<Float32>.stride)
         
         guard AudioObjectGetPropertyData(
             device,
@@ -144,7 +144,7 @@ public final class SoundMixerService: BaseFeatureService {
         )
         
         var muted: Int32 = 0
-        let size = UInt32(MemoryLayout<Int32>.stride)
+        var size = UInt32(MemoryLayout<Int32>.stride)
         
         let status = AudioObjectGetPropertyData(
             device,
