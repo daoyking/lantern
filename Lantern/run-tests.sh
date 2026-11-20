@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Run Lantern core logic regression tests without SwiftPM.
+# SwiftPM's manifest compiler invokes sandbox-exec internally, which is blocked
+# in sandboxed shells — so we compile the Core sources + Tests/main.swift
+# directly with swiftc and execute the resulting binary.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+SDK="$(xcrun --sdk macosx --show-sdk-path)"
+OUT="${TMPDIR:-/tmp}/lantern_cli_tests"
+
+echo "[TEST] Compiling core logic test driver…"
+xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
+    -F "$SDK/System/Library/Frameworks" \
+    -Xlinker -client_name -Xlinker AppKit \
+    -o "$OUT" \
+    Sources/Lantern/Core/AppFeature.swift \
+    Sources/Lantern/Core/DefaultsKey.swift \
+    Sources/Lantern/Core/FeatureCatalog.swift \
+    Sources/Lantern/Core/Permissions.swift \
+    Sources/Lantern/Core/FeatureService.swift \
+    Sources/Lantern/Core/FeatureRuntime.swift \
+    Sources/Lantern/Core/StringTable.swift \
+    Tests/main.swift
+
+echo "[TEST] Running…"
+"$OUT"

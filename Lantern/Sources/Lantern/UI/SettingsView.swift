@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @ObservedObject private var permissions = Permissions.shared
     @AppStorage(DefaultsKey.panelOpacity.rawValue) private var opacity: Double = 1.0
     @AppStorage(DefaultsKey.showAnimations.rawValue) private var showAnimations = true
     
@@ -29,7 +30,7 @@ struct SettingsView: View {
             }
             
             Section("About") {
-                LabeledContent("Version", value: "1.0.0-alpha")
+                LabeledContent("Version", value: MenuPanelView.appVersion)
                 LabeledContent("Bundle ID", value: "me.lantern.menubar")
                 LabeledContent("License", value: "GPL-3.0")
             }

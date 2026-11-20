@@ -60,27 +60,40 @@ public final class FeatureRuntime: ObservableObject {
         }
     }
 
-    /// Start a single feature immediately
+    /// Start a single feature immediately.
+    /// The service is optional: catalog-only / not-yet-implemented features
+    /// still toggle their persisted preference so the UI switch is never dead.
     public func start(_ feature: AppFeature) {
-        guard let service = services[feature] else { return }
         guard !activeFeatures.contains(feature) else { return }
 
-        try? service.start()
+        if let service = services[feature] {
+            try? service.start()
+        }
         activeFeatures.insert(feature)
+        persist(feature, enabled: true)
 
-        // Notify observers
         objectWillChange.send()
     }
 
-    /// Stop a single feature
+    /// Stop a single feature (service optional — see start(_:)).
     public func stop(_ feature: AppFeature) {
-        guard let service = services[feature] else { return }
         guard activeFeatures.contains(feature) else { return }
 
-        try? service.stop()
+        if let service = services[feature] {
+            try? service.stop()
+        }
         activeFeatures.remove(feature)
+        persist(feature, enabled: false)
 
         objectWillChange.send()
+    }
+
+    /// Persist a single feature's enabled state without rewriting every key.
+    private func persist(_ feature: AppFeature, enabled: Bool) {
+        UserDefaults.standard.set(
+            enabled,
+            forKey: DefaultsKey.featureEnabledKey(feature.rawValue)
+        )
     }
 
     /// Toggle a feature on/off (used by menu panel actions)

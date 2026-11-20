@@ -4,65 +4,66 @@ import SwiftUI
 
 struct MenuPanelView: View {
     @StateObject private var runtime = FeatureRuntime.shared
+    @ObservedObject private var permissions = Permissions.shared
     @State private var selectedTab: FeatureGroup = .windowsDock
-    @State private var searchText = ""
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             panelHeader
-
-            // Tab navigation
             tabBar
 
-            // Content area
-            TabView(selection: $selectedTab) {
-                ForEach(FeatureGroup.allCases, id: \.self) { group in
-                    groupContent(group)
-                        .tag(group)
-                        .tabItem {
-                            Label(group.rawValue, systemImage: group.icon)
-                        }
-                }
-            }
-            // .tabViewStyle(.panel) // Requires macOS 15+, unavailable in CLT27 SDK
+            // Single content view driven by selectedTab. No nested TabView —
+            // the earlier version stacked a custom tab bar AND a native
+            // TabView(.tabItem), which rendered two rows and squeezed the
+            // labels together ("Windows & DockMouse & Keyboard").
+            groupContent(selectedTab)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Footer
             panelFooter
         }
-        .frame(width: 320, height: 400)
+        .frame(width: 360, height: 440)
         .background(PanelSurface.background)
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(PanelSurface.border, lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+        .sheet(isPresented: $showSettings) {
+            SettingsView().environmentObject(permissions)
+        }
     }
 
     // MARK: - Header
 
     private var panelHeader: some View {
-        HStack {
+        HStack(spacing: 10) {
             Text(Strings.appName.value)
                 .font(.headline)
                 .foregroundStyle(PanelSurface.title)
 
             Spacer()
 
-            // Permission indicator
+            // Permission indicator — tappable to open the relevant settings
             if let deniedPerm = Permissions.deniedPermission {
-                Image(systemName: "lock.fill")
-                    .foregroundStyle(.orange)
-                    .help(deniedPerm.humanReadableName + " required")
+                Button {
+                    permissions.request(deniedPerm)
+                } label: {
+                    Image(systemName: "lock.fill")
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.plain)
+                .help("\(deniedPerm.humanReadableName) permission required — click to grant")
             }
 
-            // Settings button
-            Button(action: showSettings) {
+            Button {
+                showSettings = true
+            } label: {
                 Image(systemName: "gearshape.fill")
                     .foregroundStyle(PanelSurface.secondary)
             }
             .buttonStyle(.plain)
+            .help("Settings")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -72,23 +73,19 @@ struct MenuPanelView: View {
     // MARK: - Tab Bar
 
     private var tabBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                ForEach(FeatureGroup.allCases, id: \.self) { group in
-                    TabButton(
-                        isSelected: selectedTab == group,
-                        icon: group.icon,
-                        label: group.rawValue
-                    ) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTab = group
-                        }
-                    }
-                    .frame(minWidth: 80)
+        HStack(spacing: 0) {
+            ForEach(FeatureGroup.allCases, id: \.self) { group in
+                TabButton(
+                    isSelected: selectedTab == group,
+                    icon: group.icon,
+                    label: group.shortLabel
+                ) {
+                    selectedTab = group
                 }
             }
-            .background(PanelSurface.tabBarBackground)
         }
+        .frame(maxWidth: .infinity)
+        .background(PanelSurface.tabBarBackground)
         .overlay(
             Divider().foregroundColor(PanelSurface.separator),
             alignment: .bottom
@@ -98,53 +95,77 @@ struct MenuPanelView: View {
     // MARK: - Group Content
 
     private func groupContent(_ group: FeatureGroup) -> some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(runtime.orderedFeatures(in: group), id: \.self) { feature in
-                    FeatureRow(feature: feature)
+        let features = runtime.orderedFeatures(in: group)
+        return Group {
+            if features.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "tray")
+                        .font(.title2)
+                        .foregroundStyle(PanelSurface.tertiary)
+                    Text("No features in this group")
+                        .font(.caption)
+                        .foregroundStyle(PanelSurface.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(features, id: \.self) { feature in
+                            FeatureRow(feature: feature)
+                        }
+                    }
+                    .padding(12)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
         }
+        .id(group) // reset scroll position when switching tabs
     }
 
     // MARK: - Footer
 
     private var panelFooter: some View {
-        HStack {
-            Text("Lantern v1.0.0")
+        HStack(spacing: 12) {
+            Text("Lantern v\(MenuPanelView.appVersion)")
                 .font(.caption2)
                 .foregroundStyle(PanelSurface.tertiary)
 
             Spacer()
 
             Button(action: openGitHub) {
-                Image(systemName: "github")
+                Image(systemName: "link.circle")
                     .foregroundStyle(PanelSurface.secondary)
             }
             .buttonStyle(.plain)
+            .help("View source on GitHub")
 
             Button(action: quitApp) {
                 Image(systemName: "power")
                     .foregroundStyle(.red)
             }
             .buttonStyle(.plain)
+            .help("Quit Lantern")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(PanelSurface.footerBackground)
     }
 
-    // MARK: - Actions
+    // MARK: - Version / Actions
 
-    private func showSettings() {
-        // Navigate to settings tab or open settings window
-        print("Settings clicked")
+    /// Read the real bundled version instead of a hard-coded string.
+    static var appVersion: String {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        switch (short, build) {
+        case let (s?, b?): return "\(s) (\(b))"
+        case let (s?, nil): return s
+        case (nil, let b?): return "build \(b)"
+        default: return "dev"
+        }
     }
 
     private func openGitHub() {
-        if let url = URL(string: "https://github.com/example/lantern") {
+        if let url = URL(string: "https://github.com/daoyking/lantern") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -164,19 +185,23 @@ struct TabButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(.system(size: 15))
                 Text(label)
-                    .font(.caption2)
+                    .font(.system(size: 9))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
             .foregroundStyle(isSelected ? PanelSurface.accent : PanelSurface.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
+            .contentShape(Rectangle())
             .background(isSelected ? PanelSurface.selectedTabBackground : Color.clear)
             .cornerRadius(6)
         }
         .buttonStyle(.plain)
+        .help(label)
     }
 }
 
@@ -184,38 +209,55 @@ struct FeatureRow: View {
     let feature: AppFeature
     @StateObject private var runtime = FeatureRuntime.shared
 
+    private var requiredPermission: PermissionType? {
+        FeatureCatalog.shared.metadata(for: feature).requiresPermission
+    }
+
+    private var permissionGranted: Bool {
+        guard let perm = requiredPermission, perm != .none else { return true }
+        return Permissions.shared.isGranted(perm)
+    }
+
     var body: some View {
-        HStack {
+        HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(feature.displayName)
-                    .font(.subheadline)
-                    .foregroundStyle(PanelSurface.primary)
+                HStack(spacing: 4) {
+                    Text(feature.displayName)
+                        .font(.subheadline)
+                        .foregroundStyle(PanelSurface.primary)
+                    if !permissionGranted {
+                        Image(systemName: "lock.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                }
                 Text(feature.descriptionText)
                     .font(.caption)
                     .foregroundStyle(PanelSurface.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            // Toggle switch
+            // Every toggle is interactive. Toggling ON requests any missing
+            // permission but still records the user's choice so the switch
+            // never feels "dead".
             Toggle(isOn: Binding(
                 get: { runtime.activeFeatures.contains(feature) },
                 set: { newValue in
-                    if newValue {
-                        runtime.start(feature)
-                    } else {
-                        runtime.stop(feature)
+                    if newValue, let perm = requiredPermission, !permissionGranted {
+                        Permissions.shared.request(perm)
                     }
+                    runtime.toggle(feature)
                 }
             )) {
                 EmptyView()
             }
             .toggleStyle(.switch)
-            .disabled(!isAvailable(feature))
-            .help(isAvailable(feature) ? "" : "Permission required")
+            .labelsHidden()
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 9)
         .padding(.horizontal, 12)
         .background(PanelSurface.cardBackground)
         .cornerRadius(8)
@@ -224,78 +266,23 @@ struct FeatureRow: View {
                 .stroke(PanelSurface.cardBorder, lineWidth: 1)
         )
     }
-
-    private func isAvailable(_ feature: AppFeature) -> Bool {
-        FeatureCatalog.shared.isAvailable(feature)
-    }
 }
 
 // MARK: - Panel Styling
 
 enum PanelSurface {
-    static var background: Color {
-        Color(red: 0.09, green: 0.09, blue: 0.10)
-    }
-
-    static var headerBackground: Color {
-        Color(red: 0.12, green: 0.12, blue: 0.13)
-    }
-
-    static var tabBarBackground: Color {
-        Color(red: 0.10, green: 0.10, blue: 0.11)
-    }
-
-    static var footerBackground: Color {
-        Color(red: 0.08, green: 0.08, blue: 0.09)
-    }
-
-    static var cardBackground: Color {
-        Color(red: 0.15, green: 0.15, blue: 0.16)
-    }
-
-    static var selectedTabBackground: Color {
-        Color.white.opacity(0.1)
-    }
-
-    static var primary: Color {
-        Color.white
-    }
-
-    static var secondary: Color {
-        Color.white.opacity(0.7)
-    }
-
-    static var tertiary: Color {
-        Color.white.opacity(0.4)
-    }
-
-    static var accent: Color {
-        Color.blue
-    }
-
-    static var border: Color {
-        Color.white.opacity(0.1)
-    }
-
-    static var cardBorder: Color {
-        Color.white.opacity(0.05)
-    }
-
-    static var separator: Color {
-        Color.white.opacity(0.1)
-    }
-
-    static var title: Color {
-        Color.white
-    }
+    static var background: Color { Color(red: 0.09, green: 0.09, blue: 0.10) }
+    static var headerBackground: Color { Color(red: 0.12, green: 0.12, blue: 0.13) }
+    static var tabBarBackground: Color { Color(red: 0.10, green: 0.10, blue: 0.11) }
+    static var footerBackground: Color { Color(red: 0.08, green: 0.08, blue: 0.09) }
+    static var cardBackground: Color { Color(red: 0.15, green: 0.15, blue: 0.16) }
+    static var selectedTabBackground: Color { Color.white.opacity(0.1) }
+    static var primary: Color { .white }
+    static var secondary: Color { .white.opacity(0.7) }
+    static var tertiary: Color { .white.opacity(0.4) }
+    static var accent: Color { .blue }
+    static var border: Color { .white.opacity(0.1) }
+    static var cardBorder: Color { .white.opacity(0.05) }
+    static var separator: Color { .white.opacity(0.1) }
+    static var title: Color { .white }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-struct MenuPanelView_Previews: PreviewProvider {
-    static var previews: some View {
-        MenuPanelView()
-    }
-}
-#endif

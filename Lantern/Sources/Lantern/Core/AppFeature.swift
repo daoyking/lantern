@@ -186,6 +186,19 @@ public enum FeatureGroup: String, CaseIterable, Identifiable {
 
     public var id: String { rawValue }
 
+    /// Compact label for the narrow tab bar (full rawValue overflows at 320pt)
+    public var shortLabel: String {
+        switch self {
+        case .windowsDock: return "Windows"
+        case .mouseKeyboard: return "Mouse"
+        case .clipboard: return "Clipboard"
+        case .sound: return "Sound"
+        case .energyDisplay: return "Energy"
+        case .tools: return "Tools"
+        case .dynamicIsland: return "Island"
+        }
+    }
+
     public var icon: String {
         switch self {
         case .windowsDock: return "square.stack.3d.up.fill"
