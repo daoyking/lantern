@@ -96,16 +96,13 @@ build() {
 
     # Compile — parallel batch mode on all cores (see vorssaint-utils comment:
     # "without -j batches share parsing work across every core, keeping optimisation per-file")
-    local prebuilt_modules="$(xcrun --sdk macosx --show-sdk-path)/System/Library/Frameworks/SwiftUI.framework/Versions/A/Frameworks"
-    [[ -d "$prebuilt_modules" ]] || prebuilt_modules="$(xcrun --sdk macosx --show-sdk-path)/System/iOSSupport/System/Library/Frameworks/SwiftUI.framework/Versions/A/Frameworks"
     log_info "Compiling with $(sysctl -n hw.logicalcpu) cores, batch mode…"
     swiftc "$opt_flags" -incremental -enable-batch-mode \
         -j "$(sysctl -n hw.logicalcpu)" \
         -output-file-map "$file_map" \
         -target "$TARGET" -sdk "$SDK" \
         -module-name Lantern \
-        -F "$SDK/System/Library/Frameworks" \
-        -F "$prebuilt_modules" \
+        -framework SwiftUI \
         -Xcc -fPIC \
         "${SOURCES[@]}" \
         -o ".build/${mode}/${APP_NAME}"
