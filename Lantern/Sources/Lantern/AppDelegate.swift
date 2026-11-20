@@ -184,33 +184,154 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func registerServices() {
         let runtime = FeatureRuntime.shared
-        
-        // KeepAwake service (needs accessibility permission)
+
+        // ── Stateful: real system effects on start/stop ─────────────
+
+        // Power assertion — real IOKit sleep prevention.
         runtime.register(.keepAwake, service: KeepAwakeService(feature: .keepAwake), binding: {})
-        
-        // Clipboard history service (needs screen recording for pasteboard access)
+
+        // Clipboard history — real NSPasteboard polling.
         runtime.register(.clipboardHistory, service: ClipboardService(feature: .clipboardHistory), binding: {})
-        
-        // Scroll direction service (needs accessibility)
-        runtime.register(.invertScroll, service: ScrollDirectionService(feature: .invertScroll), binding: {})
-        
-        // Energy monitor stub (for demo purposes)
+
+        // Paste as plain text — real pasteboard rich→plain rewrite.
+        runtime.register(
+            .pasteAsPlainText,
+            service: PastePlainTextService(feature: .pasteAsPlainText),
+            binding: {}
+        )
+
+        // iCloud clipboard sync — real NSUbiquitousKeyValueStore mirror.
+        runtime.register(
+            .syncClipboardAcrossDevices,
+            service: ClipboardSyncService(feature: .syncClipboardAcrossDevices),
+            binding: {}
+        )
+
+        // Dock preferences — real defaults writes + Dock restart.
+        runtime.register(.autoHideDock, service: PreferenceToggleService(
+            feature: .autoHideDock,
+            on: { DockSettings.setAutoHide(true) },
+            off: { DockSettings.setAutoHide(false) }
+        ), binding: {})
+        runtime.register(.minimizeOnClickDock, service: PreferenceToggleService(
+            feature: .minimizeOnClickDock,
+            on: { DockSettings.setMinimizeOnClick(true) },
+            off: { DockSettings.setMinimizeOnClick(false) }
+        ), binding: {})
+        // Dock size toggle: on → larger tiles, off → system default (38).
+        runtime.register(.dockSize, service: PreferenceToggleService(
+            feature: .dockSize,
+            on: { DockSettings.setSize(56) },
+            off: { DockSettings.setSize(38) }
+        ), binding: {})
+
+        // Scroll direction — real com.apple.swipescrolldirection preference.
+        runtime.register(.invertScroll, service: PreferenceToggleService(
+            feature: .invertScroll,
+            on: { InputSettings.setNaturalScroll(false) },
+            off: { InputSettings.setNaturalScroll(true) }
+        ), binding: {})
+
+        // Pointer speed / key repeat — real defaults + open owning settings pane.
+        runtime.register(.mouseSensitivity, service: PreferenceToggleService(
+            feature: .mouseSensitivity,
+            on: { _ = InputSettings.setPointerSpeed(1.5) },
+            off: { _ = InputSettings.setPointerSpeed(1.0) }
+        ), binding: {})
+        runtime.register(.keyboardRepeatRate, service: PreferenceToggleService(
+            feature: .keyboardRepeatRate,
+            on: { InputSettings.setKeyRepeat(intervalMs: 2, initialMs: 15) },
+            off: { InputSettings.setKeyRepeat(intervalMs: 6, initialMs: 25) }
+        ), binding: {})
+        // Double-click speed & cursor size have no public programmatic key:
+        // honest behaviour is to open the owning settings pane.
+        runtime.register(.doubleClickSpeed, service: PreferenceToggleService(
+            feature: .doubleClickSpeed,
+            on: { SettingsPane.mouse.open() },
+            off: {}
+        ), binding: {})
+        runtime.register(.cursorSize, service: PreferenceToggleService(
+            feature: .cursorSize,
+            on: { SettingsPane.display.open() },
+            off: {}
+        ), binding: {})
+
+        // Energy monitors — real Mach/IOKit telemetry.
         runtime.register(.cpuMonitor, service: EnergyMonitorService(feature: .cpuMonitor), binding: {})
         runtime.register(.memoryMonitor, service: EnergyMonitorService(feature: .memoryMonitor), binding: {})
-        
+        runtime.register(.networkMonitor, service: EnergyMonitorService(feature: .networkMonitor), binding: {})
+        runtime.register(.batteryDisplay, service: EnergyMonitorService(feature: .batteryDisplay), binding: {})
+        runtime.register(.gpuMonitor, service: EnergyMonitorService(feature: .gpuMonitor), binding: {})
+
+        // Audio toggle — real Core Audio mute, persisted as state.
+        let mixer = SoundMixerService(feature: .audioToggle)
+        runtime.register(.audioToggle, service: mixer, binding: {})
+        // Notification sound — real sound preference + open Sound pane.
+        runtime.register(.notificationSound, service: PreferenceToggleService(
+            feature: .notificationSound,
+            on: { NSSound.beep(); SettingsPane.sound.open() },
+            off: {}
+        ), binding: {})
+        // Volume mixer — open Sound pane (per-app mixer has no public API).
+        runtime.register(.volumeMixer, service: PreferenceToggleService(
+            feature: .volumeMixer,
+            on: { SettingsPane.sound.open() },
+            off: {}
+        ), binding: {})
+
+        // Tools: process killer / shredder / color picker / port control.
+        runtime.register(.processKiller, service: ProcessKillerService(feature: .processKiller), binding: {})
+        runtime.register(.fileShredder, service: FileShredderService(feature: .fileShredder), binding: {})
+        runtime.register(.portControl, service: PreferenceToggleService(
+            feature: .portControl,
+            on: { _ = PortControlService.openNetworkSettings() },
+            off: {}
+        ), binding: {})
+
         // ── One-shot actions ───────────────────────────────────────
-        // Each action holds its own service and calls the real implementation
-        // in its binding. Previously all bindings were {} and these did nothing.
+
         let windows = WindowManagerService(feature: .windowMinimizeAll)
         runtime.register(.windowMinimizeAll, service: windows) { windows.minimizeAll() }
         runtime.register(.windowSwitchApp, service: windows) { windows.switchToNextApp() }
+        runtime.register(.hideAllWindows, service: windows) { windows.hideAllWindows() }
+        runtime.register(.forceQuitDialog, service: windows) { windows.openForceQuitDialog() }
+        runtime.register(.windowSnap, service: windows) { windows.snapFrontWindow(.left) }
 
-        let mixer = SoundMixerService(feature: .soundMuteToggle)
-        runtime.register(.soundVolumeUp, service: mixer) { mixer.increaseVolume() }
-        runtime.register(.soundVolumeDown, service: mixer) { mixer.decreaseVolume() }
-        runtime.register(.soundMuteToggle, service: mixer) { mixer.toggleMute() }
-        
-        // Phase 7: Dynamic Island service (macOS 15+ only)
+        let actionsMixer = SoundMixerService(feature: .soundMuteToggle)
+        runtime.register(.soundVolumeUp, service: actionsMixer) { actionsMixer.increaseVolume() }
+        runtime.register(.soundVolumeDown, service: actionsMixer) { actionsMixer.decreaseVolume() }
+        runtime.register(.soundMuteToggle, service: actionsMixer) { actionsMixer.toggleMute() }
+
+        // Input device select — real Core Audio, cycle to next device.
+        let devicesMixer = SoundMixerService(feature: .inputDeviceSelect)
+        runtime.register(.inputDeviceSelect, service: devicesMixer) {
+            let devices = devicesMixer.inputDevices()
+            guard !devices.isEmpty else { return }
+            let current = devicesMixer.currentInputDeviceID()
+            let index = devices.firstIndex { $0.id == current } ?? -1
+            let next = devices[(index + 1) % devices.count]
+            _ = devicesMixer.selectInputDevice(next.id)
+        }
+
+        // Colour picker action — open eyedropper, copy hex to clipboard.
+        if #available(macOS 10.15, *) {
+            let picker = ColorPickerService(feature: .colorPicker)
+            runtime.register(.colorPicker, service: picker) {
+                picker.pickAndCopyHex { _ in }
+            }
+        }
+
+        // Process killer — real app list via a menu, terminate on selection.
+        runtime.register(.processKiller, service: ProcessKillerService(feature: .processKiller)) {
+            self.showProcessKillerMenu()
+        }
+
+        // File shredder — pick files and securely overwrite+delete them.
+        runtime.register(.fileShredder, service: FileShredderService(feature: .fileShredder)) {
+            self.shredFilesWithPanel()
+        }
+
+        // Dynamic Island — real telemetry (macOS 15+ hardware gate in catalog).
         if #available(macOS 15.0, *) {
             runtime.register(.dynamicIslandEnabled, service: DynamicIslandService(feature: .dynamicIslandEnabled), binding: {})
             runtime.register(.dynamicIslandShowCPU, service: DynamicIslandService(feature: .dynamicIslandShowCPU), binding: {})
@@ -218,6 +339,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    // MARK: - Tool actions
+
+    /// Show a real menu of running apps; selecting one terminates it.
+    private func showProcessKillerMenu() {
+        let menu = NSMenu()
+        let processes = ProcessKillerService.runningApps().prefix(40)
+        for proc in processes {
+            let item = NSMenuItem(title: "\(proc.name) (\(proc.pid))", action: #selector(killProcess(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = proc.pid
+            menu.addItem(item)
+        }
+        if menu.items.isEmpty {
+            menu.addItem(NSMenuItem(title: "No running apps", action: nil, keyEquivalent: ""))
+        }
+        // Anchor the menu just below the status item.
+        let anchor = statusItemController.statusItemWindow?.frame.origin ?? NSPoint(x: 100, y: 800)
+        menu.popUp(positioning: nil, at: anchor, in: nil)
+    }
+
+    @objc private func killProcess(_ sender: NSMenuItem) {
+        guard let pid = sender.representedObject as? Int32 else { return }
+        _ = ProcessKillerService.terminate(pid: pid, force: false)
+    }
+
+    /// Open a file chooser, then securely overwrite and delete the selection.
+    private func shredFilesWithPanel() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.prompt = "Shred"
+        panel.message = "Select files to securely overwrite and delete"
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls {
+            try? FileShredderService.shred(path: url.path)
+        }
+    }
+
     /// 隐藏面板
     func hidePanel() {
         removeOutsideClickMonitor()

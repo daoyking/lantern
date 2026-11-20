@@ -195,50 +195,77 @@ public final class FeatureCatalog {
         var map: [AppFeature: FeatureMetadata] = [:]
 
         // ── Windows & Dock ─────────────────────────────────────────────
-        // None of these have a registered service — preference-only placeholders.
-        map[.autoHideDock] = FeatureMetadata(installedByDefault: true, displayPriority: 1)
-        map[.minimizeOnClickDock] = FeatureMetadata(installedByDefault: true, displayPriority: 2)
-        map[.dockSize] = FeatureMetadata(displayPriority: 3)
+        // All backed by real defaults writes or Accessibility AppleScript.
+        map[.autoHideDock] = FeatureMetadata(
+            installedByDefault: true, displayPriority: 1, implementation: .native
+        )
+        map[.minimizeOnClickDock] = FeatureMetadata(
+            installedByDefault: true, displayPriority: 2, implementation: .native
+        )
+        map[.dockSize] = FeatureMetadata(displayPriority: 3, implementation: .native)
         map[.windowSnap] = FeatureMetadata(
             requiresPermission: .accessibility,
-            installedByDefault: true,
-            displayPriority: 4
+            displayPriority: 4,
+            implementation: .native,
+            isAction: true
         )
-        map[.hideAllWindows] = FeatureMetadata(displayPriority: 5)
-        map[.forceQuitDialog] = FeatureMetadata(displayPriority: 6)
+        map[.hideAllWindows] = FeatureMetadata(
+            requiresPermission: .accessibility,
+            displayPriority: 5,
+            implementation: .native,
+            isAction: true
+        )
+        map[.forceQuitDialog] = FeatureMetadata(
+            requiresPermission: .accessibility,
+            displayPriority: 6,
+            implementation: .native,
+            isAction: true
+        )
 
         // ── Mouse & Keyboard ───────────────────────────────────────────
-        // ScrollDirectionService exists but applyNaturalScroll() is a no-op
-        // on modern macOS — marked simulated/honest stub.
-        map[.invertScroll] = FeatureMetadata(installedByDefault: true, displayPriority: 1)
-        map[.mouseSensitivity] = FeatureMetadata(displayPriority: 2)
-        map[.keyboardRepeatRate] = FeatureMetadata(displayPriority: 3)
-        map[.doubleClickSpeed] = FeatureMetadata(displayPriority: 4)
-        map[.cursorSize] = FeatureMetadata(displayPriority: 5)
+        // Scroll direction / pointer speed / key repeat: real defaults writes.
+        // Double-click speed & cursor size have no public key → open settings pane.
+        map[.invertScroll] = FeatureMetadata(
+            installedByDefault: true, displayPriority: 1, implementation: .native
+        )
+        map[.mouseSensitivity] = FeatureMetadata(displayPriority: 2, implementation: .native)
+        map[.keyboardRepeatRate] = FeatureMetadata(displayPriority: 3, implementation: .native)
+        map[.doubleClickSpeed] = FeatureMetadata(displayPriority: 4, implementation: .stub)
+        map[.cursorSize] = FeatureMetadata(displayPriority: 5, implementation: .stub)
 
         // ── Clipboard ──────────────────────────────────────────────────
-        // ClipboardService polls NSPasteboard for real → native demo.
+        // All three are real NSPasteboard / iCloud key-value-store effects.
         map[.clipboardHistory] = FeatureMetadata(
             installedByDefault: true,
             displayPriority: 1,
             implementation: .native
         )
-        map[.pasteAsPlainText] = FeatureMetadata(installedByDefault: true, displayPriority: 2)
-        map[.syncClipboardAcrossDevices] = FeatureMetadata(displayPriority: 3)
+        map[.pasteAsPlainText] = FeatureMetadata(
+            installedByDefault: true, displayPriority: 2, implementation: .native
+        )
+        map[.syncClipboardAcrossDevices] = FeatureMetadata(
+            displayPriority: 3, implementation: .native
+        )
 
         // ── Sound ──────────────────────────────────────────────────────
-        // SoundMixerService uses real Core Audio APIs. Volume step / mute
-        // are one-shot actions, not persistent toggles.
+        // Core Audio for volume/mute/input device. Volume step / mute /
+        // switch-input are one-shot actions, not persistent toggles.
         map[.volumeMixer] = FeatureMetadata(
             requiresPermission: .accessibility,
             installedByDefault: true,
-            displayPriority: 1
+            displayPriority: 1,
+            implementation: .stub  // per-app mixer has no public API; opens Sound pane
         )
-        map[.inputDeviceSelect] = FeatureMetadata(displayPriority: 2)
-        map[.audioToggle] = FeatureMetadata(installedByDefault: true, displayPriority: 3)
+        map[.inputDeviceSelect] = FeatureMetadata(
+            displayPriority: 2, implementation: .native, isAction: true
+        )
+        map[.audioToggle] = FeatureMetadata(
+            installedByDefault: true, displayPriority: 3, implementation: .native
+        )
         map[.notificationSound] = FeatureMetadata(
             requiresPermission: .notifications,
-            displayPriority: 4
+            displayPriority: 4,
+            implementation: .stub  // system-wide notification sounds have no public toggle
         )
         map[.soundVolumeUp] = FeatureMetadata(displayPriority: 5, implementation: .native, isAction: true)
         map[.soundVolumeDown] = FeatureMetadata(displayPriority: 6, implementation: .native, isAction: true)
@@ -249,24 +276,27 @@ public final class FeatureCatalog {
         map[.windowSwitchApp] = FeatureMetadata(displayPriority: 9, implementation: .native, isAction: true)
 
         // ── Energy Display ─────────────────────────────────────────────
-        // EnergyMonitorService returns fabricated numbers for CPU/memory/network.
+        // All metrics are read live from Mach/IOKit/BSD via SystemMetrics.
+        // GPU has no public utilisation API — we report the real model name.
         map[.cpuMonitor] = FeatureMetadata(
             installedByDefault: true,
             displayPriority: 1,
-            implementation: .simulated
+            implementation: .native
         )
-        map[.gpuMonitor] = FeatureMetadata(displayPriority: 2)
+        map[.gpuMonitor] = FeatureMetadata(displayPriority: 2, implementation: .stub)
         map[.memoryMonitor] = FeatureMetadata(
             installedByDefault: true,
             displayPriority: 3,
-            implementation: .simulated
+            implementation: .native
         )
-        map[.networkMonitor] = FeatureMetadata(displayPriority: 4, implementation: .simulated)
-        map[.batteryDisplay] = FeatureMetadata(installedByDefault: true, displayPriority: 5)
+        map[.networkMonitor] = FeatureMetadata(displayPriority: 4, implementation: .native)
+        map[.batteryDisplay] = FeatureMetadata(
+            installedByDefault: true, displayPriority: 5, implementation: .native
+        )
 
         // ── Tools ──────────────────────────────────────────────────────
-        // KeepAwakeService uses a real IOPMAssertion — the one fully-native
-        // stateful feature.
+        // KeepAwake uses a real IOPMAssertion. Process/shred/colour are real
+        // one-shot actions. Port control needs root → honest settings fallback.
         map[.keepAwake] = FeatureMetadata(
             installedByDefault: true,
             displayPriority: 1,
@@ -274,20 +304,26 @@ public final class FeatureCatalog {
         )
         map[.portControl] = FeatureMetadata(
             requiresPermission: .fullDiskAccess,
-            displayPriority: 2
+            displayPriority: 2,
+            implementation: .stub
         )
         map[.processKiller] = FeatureMetadata(
             requiresPermission: .accessibility,
-            installedByDefault: true,
-            displayPriority: 3
+            displayPriority: 3,
+            implementation: .native,
+            isAction: true
         )
         map[.fileShredder] = FeatureMetadata(
             requiresPermission: .fullDiskAccess,
-            displayPriority: 4
+            displayPriority: 4,
+            implementation: .native,
+            isAction: true
         )
         map[.colorPicker] = FeatureMetadata(
             requiresPermission: .screenRecording,
-            displayPriority: 5
+            displayPriority: 5,
+            implementation: .native,
+            isAction: true
         )
 
         // ── Dynamic Island ─────────────────────────────────────────────

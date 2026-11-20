@@ -63,14 +63,17 @@ public final class DynamicIslandService: BaseFeatureService {
     }
     
     // MARK: - State
-    
-    /// Sample metrics (in real impl, would connect to actual monitors)
+
+    /// Live metrics sourced from SystemMetrics (Mach/IOKit/BSD) and Core Audio.
     private var _cpuPercent: Double = 0
     private var _memoryPercent: Double = 0
     private var _batteryPercent: Double = 100
     private var _volumePercent: Double = 50
     private var _networkUploadKBps: Double = 0
     private var _networkDownloadKBps: Double = 0
+
+    /// Real telemetry collector — no fabricated/random values.
+    private let metrics = SystemMetrics()
     
     // Public accessors for SwiftUI binding
     public var cpuPercent: Double { _cpuPercent }
@@ -140,17 +143,26 @@ public final class DynamicIslandService: BaseFeatureService {
     private var timers: [Timer] = []
     
     private func startPeriodicUpdates() {
-        // Simulate periodic metric updates
-        let timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {_ in
-            self.simulateMetricDrift()
+        _ = metrics.snapshot() // baseline
+        let timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.refreshLiveMetrics()
         }
         timers.append(timer)
+        refreshLiveMetrics()
     }
-    
-    private func simulateMetricDrift() {
-        _cpuPercent = max(5, min(95, _cpuPercent + (Double.random(in: -5...5))))
-        _memoryPercent = max(20, min(90, _memoryPercent + (Double.random(in: -2...2))))
-        _volumePercent = max(0, min(100, _volumePercent + (Double.random(in: -1...1))))
+
+    /// Pull genuine values from the OS collector. Battery on desktops reports
+    /// -1; keep the last known value (or 100) rather than showing a negative %.
+    private func refreshLiveMetrics() {
+        let s = metrics.snapshot()
+        _cpuPercent = s.cpuUsage
+        _memoryPercent = s.memoryPressure
+        _networkUploadKBps = s.networkUpKBps
+        _networkDownloadKBps = s.networkDownKBps
+        if s.batteryPercent >= 0 {
+            _batteryPercent = s.batteryPercent
+        }
+        notifyContentChange()
     }
     
     @available(macOS 15.0, *)

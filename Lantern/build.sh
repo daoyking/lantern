@@ -78,12 +78,16 @@ build() {
         Sources/Lantern/Core/PanelLayout.swift
         Sources/Lantern/Core/StatusItemController.swift
         Sources/Lantern/Core/StringTable.swift
+        Sources/Lantern/Services/ClipboardEnhancementService.swift
         Sources/Lantern/Services/ClipboardService.swift
         Sources/Lantern/Services/DynamicIslandService.swift
         Sources/Lantern/Services/EnergyMonitorService.swift
         Sources/Lantern/Services/KeepAwakeService.swift
         Sources/Lantern/Services/ScrollDirectionService.swift
         Sources/Lantern/Services/SoundMixerService.swift
+        Sources/Lantern/Services/SystemMetrics.swift
+        Sources/Lantern/Services/SystemSettingsService.swift
+        Sources/Lantern/Services/ToolsServices.swift
         Sources/Lantern/Services/WindowManagerService.swift
         Sources/Lantern/UI/DynamicIslandView.swift
         Sources/Lantern/UI/MenuPanelView.swift

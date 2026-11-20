@@ -160,16 +160,16 @@ public final class SoundMixerService: BaseFeatureService {
     
     private func setMute(_ muted: Bool) {
         guard let device = getDefaultDevice() else { return }
-        
+
         var address = AudioObjectPropertyAddress(
             mSelector: Self.kAudioDevicePropertyMute,
             mScope: Self.kAudioDevicePropertyScopeOutput,
             mElement: kAudioObjectPropertyElementMain
         )
-        
+
         var boolValue: Int32 = muted ? 1 : 0
         let size = UInt32(MemoryLayout<Int32>.stride)
-        
+
         AudioObjectSetPropertyData(
             device,
             &address,
@@ -178,5 +178,83 @@ public final class SoundMixerService: BaseFeatureService {
             size,
             &boolValue
         )
+    }
+
+    // MARK: - Input devices (Core Audio)
+
+    private static let kAudioHardwarePropertyDevices: UInt32 = 0x64657623  // 'dev#'
+    private static let kAudioDevicePropertyDeviceNameCFString: UInt32 = 0x6E616D65  // 'name'
+    private static let kAudioHardwarePropertyDefaultInputDevice: UInt32 = 0x64656669  // 'defi'
+
+    public struct InputDevice: Identifiable, Hashable {
+        public let id: AudioObjectID
+        public let name: String
+    }
+
+    /// Enumerate all audio input devices from Core Audio.
+    public func inputDevices() -> [InputDevice] {
+        var address = AudioObjectPropertyAddress(
+            mSelector: Self.kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var size = UInt32(0)
+        guard AudioObjectGetPropertyDataSize(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size
+        ) == noErr else { return [] }
+
+        let count = Int(size) / MemoryLayout<AudioObjectID>.stride
+        guard count > 0 else { return [] }
+        var devices = [AudioObjectID](repeating: 0, count: count)
+        let readStatus = devices.withUnsafeMutableBytes { buffer -> OSStatus in
+            guard let base = buffer.baseAddress else { return -1 }
+            return AudioObjectGetPropertyData(
+                AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, base
+            )
+        }
+        guard readStatus == noErr else { return [] }
+
+        return devices.compactMap { deviceID in
+            var nameAddr = AudioObjectPropertyAddress(
+                mSelector: Self.kAudioDevicePropertyDeviceNameCFString,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            var nameSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.stride)
+            var nameRef: Unmanaged<CFString>? = nil
+            guard AudioObjectGetPropertyData(
+                deviceID, &nameAddr, 0, nil, &nameSize, &nameRef
+            ) == noErr, let nameRef else { return nil }
+            return InputDevice(id: deviceID, name: nameRef.takeUnretainedValue() as String)
+        }
+    }
+
+    /// ID of the current default input device.
+    public func currentInputDeviceID() -> AudioObjectID {
+        var address = AudioObjectPropertyAddress(
+            mSelector: Self.kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var device = AudioObjectID(kAudioObjectSystemObject)
+        var size = UInt32(MemoryLayout<AudioObjectID>.stride)
+        guard AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &device
+        ) == noErr else { return 0 }
+        return device
+    }
+
+    /// Set the default input device. Real Core Audio mutation.
+    public func selectInputDevice(_ id: AudioObjectID) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: Self.kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var deviceID = id
+        let size = UInt32(MemoryLayout<AudioObjectID>.stride)
+        return AudioObjectSetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, size, &deviceID
+        ) == noErr
     }
 }

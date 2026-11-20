@@ -162,8 +162,44 @@ Check.that(catalog.metadata(for: .windowSwitchApp).isAction, "切换 App 应为�
 Check.that(!catalog.metadata(for: .keepAwake).isAction, "KeepAwake 应为状态型")
 Check.that(!catalog.metadata(for: .clipboardHistory).isAction, "剪贴板历史应为状态型")
 Check.that(catalog.metadata(for: .keepAwake).implementation == .native, "KeepAwake 应为原生实现")
-Check.that(catalog.metadata(for: .cpuMonitor).implementation == .simulated, "CPU 监控应为模拟数据")
-Check.that(catalog.metadata(for: .autoHideDock).implementation == .stub, "Dock 自动隐藏应为未实现占位")
+Check.that(catalog.metadata(for: .cpuMonitor).implementation == .native, "CPU 监控应为真实指标")
+Check.that(catalog.metadata(for: .autoHideDock).implementation == .native, "Dock 自动隐藏应为真实设置")
+Check.that(catalog.metadata(for: .pasteAsPlainText).implementation == .native, "纯文本粘贴应为真实实现")
+Check.that(catalog.metadata(for: .keepAwake).implementation == .native, "防休眠应为真实实现")
+
+print("▶ 15. 原生化后：一次性动作型功能完整分类")
+for f in [AppFeature.windowSnap, .hideAllWindows, .forceQuitDialog,
+          .colorPicker, .inputDeviceSelect, .processKiller, .fileShredder] {
+    Check.that(catalog.metadata(for: f).isAction, "\(f.rawValue) 应为一次性动作型")
+    Check.that(catalog.metadata(for: f).implementation == .native, "\(f.rawValue) 应为原生实现")
+}
+// 受系统限制、诚实降级的仍是 stub（打开设置面板，非假数据）
+Check.that(catalog.metadata(for: .doubleClickSpeed).implementation == .stub, "双击速度应诚实标注为降级")
+Check.that(catalog.metadata(for: .cursorSize).implementation == .stub, "光标大小应诚实标注为降级")
+Check.that(catalog.metadata(for: .portControl).implementation == .stub, "端口管控需 root，应诚实标注")
+Check.that(catalog.metadata(for: .gpuMonitor).implementation == .stub, "GPU 利用率无公开 API，应诚实标注")
+// Dynamic Island 数据已接真实指标，但形态仍是模拟悬浮窗（macOS 无原生 API）
+Check.that(catalog.metadata(for: .dynamicIslandEnabled).implementation == .simulated,
+           "Dynamic Island 形态应保持 DEMO 标注")
+
+print("▶ 16. 真实指标数学：CPU/网络/内存计算正确（极端边界）")
+// CPU：全 idle → 0%；全 active → 100%
+Check.that(MetricMath.cpuPercent(current: (0,0,100,0), previous: (0,0,0,0)) == 0, "全空闲 CPU 应为 0%")
+Check.that(MetricMath.cpuPercent(current: (60,40,0,0), previous: (0,0,0,0)) == 100, "全占用 CPU 应为 100%")
+Check.that(MetricMath.cpuPercent(current: (25,25,50,0), previous: (0,0,0,0)) == 50, "半占用 CPU 应为 50%")
+// 无 delta（计数器未变）应安全返回 0，不除零
+Check.that(MetricMath.cpuPercent(current: (10,10,10,10), previous: (10,10,10,10)) == 0, "CPU 无 delta 应为 0")
+// 网络：1024KB/1s = 1024 KB/s；计数器回绕（重置）应返回 0
+Check.that(MetricMath.rateKBps(current: 1024*1024, previous: 0, interval: 1.0) == 1024, "网络速率计算错误")
+Check.that(MetricMath.rateKBps(current: 100, previous: 200, interval: 1.0) == 0, "网络计数器回绕应为 0")
+Check.that(MetricMath.rateKBps(current: 100, previous: 100, interval: 0) == 0, "网络零间隔应为 0")
+// 内存百分比边界
+Check.that(MetricMath.percent(used: 50, total: 100) == 50, "内存百分比应为 50%")
+Check.that(MetricMath.percent(used: 200, total: 100) == 100, "内存百分比应封顶 100%")
+Check.that(MetricMath.percent(used: 10, total: 0) == 0, "内存总量为 0 应安全返回 0")
+// 网络速率格式化
+Check.that(EnergyMonitorService.formatRate(512) == "512 KB/s", "KB 速率格式化错误")
+Check.that(EnergyMonitorService.formatRate(2048).contains("MB/s"), "MB 速率格式化错误")
 
 print("▶ 14. 动作型 toggle 不改变持久状态（不会把音量+锁在 on）")
 let action = AppFeature.soundVolumeUp
