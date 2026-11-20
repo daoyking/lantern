@@ -34,13 +34,20 @@ let runtime = FeatureRuntime.shared
 cleanFeaturePrefs()
 for f in Array(runtime.activeFeatures) { runtime.stop(f) }
 
-print("▶ 1. 每个 feature（含无 service 的）toggle 都能切换")
+print("▶ 1. 每个 stateful feature（含无 service 的）toggle 都能切换；动作型执行后不锁状态")
 for f in AppFeature.allCases {
+    let isAction = FeatureCatalog.shared.metadata(for: f).isAction
     Check.that(!runtime.activeFeatures.contains(f), "\(f.rawValue) 初始应为关闭")
     runtime.toggle(f)
-    Check.that(runtime.activeFeatures.contains(f), "\(f.rawValue) 打开失败（死开关回归）")
-    runtime.toggle(f)
-    Check.that(!runtime.activeFeatures.contains(f), "\(f.rawValue) 关闭失败")
+    if isAction {
+        // One-shot actions never latch into activeFeatures (no dead switch,
+        // no stale "on" state) — they just fire their binding.
+        Check.that(!runtime.activeFeatures.contains(f), "\(f.rawValue) 动作型不应锁存 on 状态")
+    } else {
+        Check.that(runtime.activeFeatures.contains(f), "\(f.rawValue) 打开失败（死开关回归）")
+        runtime.toggle(f)
+        Check.that(!runtime.activeFeatures.contains(f), "\(f.rawValue) 关闭失败")
+    }
 }
 
 print("▶ 2. Clipboard 组三个开关都是活的（截图问题）")
@@ -130,6 +137,39 @@ let oldBugScreen = CGRect(x: 0, y: 0, width: 1440, height: 900)
 let oldBugOrigin = CGPoint(x: oldBugScreen.maxX, y: oldBugScreen.maxY)
 Check.that(!PanelLayout.isFullyVisible(origin: oldBugOrigin, in: oldBugScreen),
            "旧 bug 坐标本应被判定为屏幕外（证明测试有效）")
+
+print("▶ 12. 实现状态标注：每个 feature 都有明确 level，动作型都有真实 binding")
+let catalog = FeatureCatalog.shared
+for f in AppFeature.allCases {
+    let meta = catalog.metadata(for: f)
+    // badge 与实现级别一致
+    switch meta.implementation {
+    case .native: Check.that(meta.implementation.badge.isEmpty, "\(f.rawValue) native 不应有 badge")
+    case .simulated: Check.that(meta.implementation.badge == "DEMO", "\(f.rawValue) 应为 DEMO badge")
+    case .stub: Check.that(meta.implementation.badge == "未实现", "\(f.rawValue) 应为 未实现 badge")
+    }
+    // 动作型功能必须都不是默认激活的持久状态
+    if meta.isAction {
+        Check.that(!meta.installedByDefault, "动作型 \(f.rawValue) 不应默认激活")
+    }
+}
+
+print("▶ 13. 动作型与状态型分类完整（音量/窗口为动作，KeepAwake/剪贴板为状态）")
+Check.that(catalog.metadata(for: .soundVolumeUp).isAction, "音量+应为动作型")
+Check.that(catalog.metadata(for: .soundMuteToggle).isAction, "静音应为动作型")
+Check.that(catalog.metadata(for: .windowMinimizeAll).isAction, "最小化应为动作型")
+Check.that(catalog.metadata(for: .windowSwitchApp).isAction, "切换 App 应为动作型")
+Check.that(!catalog.metadata(for: .keepAwake).isAction, "KeepAwake 应为状态型")
+Check.that(!catalog.metadata(for: .clipboardHistory).isAction, "剪贴板历史应为状态型")
+Check.that(catalog.metadata(for: .keepAwake).implementation == .native, "KeepAwake 应为原生实现")
+Check.that(catalog.metadata(for: .cpuMonitor).implementation == .simulated, "CPU 监控应为模拟数据")
+Check.that(catalog.metadata(for: .autoHideDock).implementation == .stub, "Dock 自动隐藏应为未实现占位")
+
+print("▶ 14. 动作型 toggle 不改变持久状态（不会把音量+锁在 on）")
+let action = AppFeature.soundVolumeUp
+Check.that(!runtime.activeFeatures.contains(action), "动作型初始不应在 activeFeatures")
+runtime.toggle(action) // 无 binding 时应安全 no-op，不崩溃、不锁状态
+Check.that(!runtime.activeFeatures.contains(action), "动作型 toggle 后不应进入 activeFeatures")
 
 cleanFeaturePrefs()
 Check.finish()

@@ -51,6 +51,8 @@ public final class FeatureRuntime: ObservableObject {
         let defaults = UserDefaults.standard
 
         for feature in AppFeature.allCases {
+            // One-shot actions have no persistent state.
+            guard !catalog.metadata(for: feature).isAction else { continue }
             // Only activate if feature is available and marked as enabled by default
             guard catalog.isAvailable(feature) else { continue }
             let key = DefaultsKey.featureEnabledKey(feature.rawValue)
@@ -96,13 +98,26 @@ public final class FeatureRuntime: ObservableObject {
         )
     }
 
-    /// Toggle a feature on/off (used by menu panel actions)
+    /// Toggle a feature on/off (used by menu panel actions).
+    /// Action-type features (volume step, switch app, minimize all) run their
+    /// one-shot effect instead of latching a state.
     public func toggle(_ feature: AppFeature) {
+        if FeatureCatalog.shared.metadata(for: feature).isAction {
+            performAction(feature)
+            return
+        }
         if activeFeatures.contains(feature) {
             stop(feature)
         } else {
             start(feature)
         }
+    }
+
+    /// Execute a one-shot action through its registered binding. Action
+    /// features do not persist an "on" state — clicking is the whole effect.
+    public func performAction(_ feature: AppFeature) {
+        bindings[feature]?()
+        objectWillChange.send()
     }
 
     // MARK: - Refresh
@@ -136,6 +151,10 @@ public final class FeatureRuntime: ObservableObject {
         let catalog = FeatureCatalog.shared
 
         for feature in AppFeature.allCases {
+            // One-shot actions have no persistent on/off state — skip them so
+            // launching the app never fires volume/window actions.
+            if catalog.metadata(for: feature).isAction { continue }
+
             let isEnabled = defaults.bool(forKey: DefaultsKey.featureEnabledKey(feature.rawValue))
             let isAvailable = catalog.isAvailable(feature)
 

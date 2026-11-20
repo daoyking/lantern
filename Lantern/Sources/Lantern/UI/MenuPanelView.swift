@@ -29,6 +29,10 @@ struct MenuPanelView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(PanelSurface.border, lineWidth: 1)
         )
+        // Esc closes the panel. onExitCommand is the macOS SwiftUI hook for Escape.
+        .onExitCommand {
+            NotificationCenter.default.post(name: .lanternClosePanel, object: nil)
+        }
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(permissions)
         }
@@ -64,6 +68,17 @@ struct MenuPanelView: View {
             }
             .buttonStyle(.plain)
             .help("Settings")
+
+            // Close button — the panel is a borderless NSPanel with no titlebar
+            // controls, so without this there was no in-panel way to dismiss it.
+            Button {
+                NotificationCenter.default.post(name: .lanternClosePanel, object: nil)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(PanelSurface.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Close panel (Esc)")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -175,6 +190,14 @@ struct MenuPanelView: View {
     }
 }
 
+// MARK: - Notifications
+
+extension Notification.Name {
+    /// Posted when the panel's close button / Esc is pressed; AppDelegate
+    /// listens and calls hidePanel().
+    static let lanternClosePanel = Notification.Name("lanternClosePanel")
+}
+
 // MARK: - Supporting Views
 
 struct TabButton: View {
@@ -208,27 +231,60 @@ struct TabButton: View {
 struct FeatureRow: View {
     let feature: AppFeature
     @StateObject private var runtime = FeatureRuntime.shared
+    @ObservedObject private var permissions = Permissions.shared
+
+    private var metadata: FeatureMetadata {
+        FeatureCatalog.shared.metadata(for: feature)
+    }
 
     private var requiredPermission: PermissionType? {
-        FeatureCatalog.shared.metadata(for: feature).requiresPermission
+        guard let perm = metadata.requiresPermission, perm != .none else { return nil }
+        return perm
     }
 
     private var permissionGranted: Bool {
-        guard let perm = requiredPermission, perm != .none else { return true }
-        return Permissions.shared.isGranted(perm)
+        guard let perm = requiredPermission else { return true }
+        return permissions.isGranted(perm)
     }
+
+    private var isLocked: Bool { !permissionGranted }
 
     var body: some View {
         HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
                     Text(feature.displayName)
                         .font(.subheadline)
                         .foregroundStyle(PanelSurface.primary)
-                    if !permissionGranted {
-                        Image(systemName: "lock.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
+
+                    // Lock = this needs a macOS permission the user hasn't granted.
+                    // Tap it to open the relevant System Settings pane.
+                    if isLocked, let perm = requiredPermission {
+                        Button {
+                            permissions.request(perm)
+                        } label: {
+                            Image(systemName: "lock.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Needs \(perm.humanReadableName) permission — click to grant")
+                    }
+
+                    // Honest implementation badge so users can tell real
+                    // integrations from demos and placeholders.
+                    if !metadata.implementation.badge.isEmpty {
+                        Text(metadata.implementation.badge)
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(metadata.implementation == .simulated ? .orange : .secondary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(metadata.implementation == .simulated
+                                          ? Color.orange.opacity(0.15)
+                                          : Color.white.opacity(0.08))
+                            )
                     }
                 }
                 Text(feature.descriptionText)
@@ -240,22 +296,31 @@ struct FeatureRow: View {
 
             Spacer(minLength: 8)
 
-            // Every toggle is interactive. Toggling ON requests any missing
-            // permission but still records the user's choice so the switch
-            // never feels "dead".
-            Toggle(isOn: Binding(
-                get: { runtime.activeFeatures.contains(feature) },
-                set: { newValue in
-                    if newValue, let perm = requiredPermission, !permissionGranted {
-                        Permissions.shared.request(perm)
-                    }
-                    runtime.toggle(feature)
+            // One-shot actions render as a button; stateful features as a switch.
+            if metadata.isAction {
+                Button {
+                    runtime.performAction(feature)
+                } label: {
+                    Image(systemName: "arrow.right.circle.fill")
+                        .foregroundStyle(PanelSurface.accent)
                 }
-            )) {
-                EmptyView()
+                .buttonStyle(.plain)
+                .help("Run now")
+            } else {
+                Toggle(isOn: Binding(
+                    get: { runtime.activeFeatures.contains(feature) },
+                    set: { newValue in
+                        if newValue, let perm = requiredPermission, !permissionGranted {
+                            permissions.request(perm)
+                        }
+                        runtime.toggle(feature)
+                    }
+                )) {
+                    EmptyView()
+                }
+                .toggleStyle(.switch)
+                .labelsHidden()
             }
-            .toggleStyle(.switch)
-            .labelsHidden()
         }
         .padding(.vertical, 9)
         .padding(.horizontal, 12)

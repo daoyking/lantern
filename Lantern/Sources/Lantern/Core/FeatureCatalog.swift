@@ -3,6 +3,26 @@
 import Foundation
 import AppKit
 
+/// How completely a feature is actually implemented. Surfaced in the UI so
+/// users can tell a real system integration from a demo or a placeholder
+/// instead of assuming every switch does something.
+public enum ImplementationLevel: String {
+    /// Real macOS API integration with observable system effect.
+    case native
+    /// Has a live service, but the numbers are simulated for demonstration.
+    case simulated
+    /// Only the on/off preference is persisted; no system effect yet.
+    case stub
+
+    public var badge: String {
+        switch self {
+        case .native: return ""
+        case .simulated: return "DEMO"
+        case .stub: return "未实现"
+        }
+    }
+}
+
 /// Describes when and how a feature should appear in the menu panel
 public struct FeatureMetadata {
     /// Whether the feature requires a specific permission to function
@@ -13,17 +33,26 @@ public struct FeatureMetadata {
     public let installedByDefault: Bool
     /// Priority order within its group (lower = higher priority)
     public let displayPriority: Int
+    /// Honest implementation status shown in the UI
+    public let implementation: ImplementationLevel
+    /// True for one-shot actions (volume step, switch app) rather than
+    /// persistent on/off state — rendered as a button, not a switch.
+    public let isAction: Bool
 
     public init(
         requiresPermission: PermissionType? = nil,
         hardwareRequirement: HardwareRequirement? = nil,
         installedByDefault: Bool = false,
-        displayPriority: Int = 99
+        displayPriority: Int = 99,
+        implementation: ImplementationLevel = .stub,
+        isAction: Bool = false
     ) {
         self.requiresPermission = requiresPermission
         self.hardwareRequirement = hardwareRequirement
         self.installedByDefault = installedByDefault
         self.displayPriority = displayPriority
+        self.implementation = implementation
+        self.isAction = isAction
     }
 }
 
@@ -165,64 +194,86 @@ public final class FeatureCatalog {
     private static func buildMetadataMap() -> [AppFeature: FeatureMetadata] {
         var map: [AppFeature: FeatureMetadata] = [:]
 
-        // Windows & Dock — no special permissions
+        // ── Windows & Dock ─────────────────────────────────────────────
+        // None of these have a registered service — preference-only placeholders.
         map[.autoHideDock] = FeatureMetadata(installedByDefault: true, displayPriority: 1)
         map[.minimizeOnClickDock] = FeatureMetadata(installedByDefault: true, displayPriority: 2)
-        map[.dockSize] = FeatureMetadata(installedByDefault: false, displayPriority: 3)
+        map[.dockSize] = FeatureMetadata(displayPriority: 3)
         map[.windowSnap] = FeatureMetadata(
             requiresPermission: .accessibility,
             installedByDefault: true,
             displayPriority: 4
         )
-        map[.hideAllWindows] = FeatureMetadata(installedByDefault: false, displayPriority: 5)
-        map[.forceQuitDialog] = FeatureMetadata(installedByDefault: false, displayPriority: 6)
+        map[.hideAllWindows] = FeatureMetadata(displayPriority: 5)
+        map[.forceQuitDialog] = FeatureMetadata(displayPriority: 6)
 
-        // Mouse & Keyboard — minimal permissions
+        // ── Mouse & Keyboard ───────────────────────────────────────────
+        // ScrollDirectionService exists but applyNaturalScroll() is a no-op
+        // on modern macOS — marked simulated/honest stub.
         map[.invertScroll] = FeatureMetadata(installedByDefault: true, displayPriority: 1)
-        map[.mouseSensitivity] = FeatureMetadata(installedByDefault: false, displayPriority: 2)
-        map[.keyboardRepeatRate] = FeatureMetadata(installedByDefault: false, displayPriority: 3)
-        map[.doubleClickSpeed] = FeatureMetadata(installedByDefault: false, displayPriority: 4)
-        map[.cursorSize] = FeatureMetadata(installedByDefault: false, displayPriority: 5)
+        map[.mouseSensitivity] = FeatureMetadata(displayPriority: 2)
+        map[.keyboardRepeatRate] = FeatureMetadata(displayPriority: 3)
+        map[.doubleClickSpeed] = FeatureMetadata(displayPriority: 4)
+        map[.cursorSize] = FeatureMetadata(displayPriority: 5)
 
-        // Clipboard
+        // ── Clipboard ──────────────────────────────────────────────────
+        // ClipboardService polls NSPasteboard for real → native demo.
         map[.clipboardHistory] = FeatureMetadata(
-            requiresPermission: .accessibility,
             installedByDefault: true,
-            displayPriority: 1
+            displayPriority: 1,
+            implementation: .native
         )
         map[.pasteAsPlainText] = FeatureMetadata(installedByDefault: true, displayPriority: 2)
-        map[.syncClipboardAcrossDevices] = FeatureMetadata(
-            requiresPermission: PermissionType.none,
-            installedByDefault: false,
-            displayPriority: 3
-        )
+        map[.syncClipboardAcrossDevices] = FeatureMetadata(displayPriority: 3)
 
-        // Sound
+        // ── Sound ──────────────────────────────────────────────────────
+        // SoundMixerService uses real Core Audio APIs. Volume step / mute
+        // are one-shot actions, not persistent toggles.
         map[.volumeMixer] = FeatureMetadata(
             requiresPermission: .accessibility,
             installedByDefault: true,
             displayPriority: 1
         )
-        map[.inputDeviceSelect] = FeatureMetadata(installedByDefault: false, displayPriority: 2)
+        map[.inputDeviceSelect] = FeatureMetadata(displayPriority: 2)
         map[.audioToggle] = FeatureMetadata(installedByDefault: true, displayPriority: 3)
         map[.notificationSound] = FeatureMetadata(
             requiresPermission: .notifications,
-            installedByDefault: false,
             displayPriority: 4
         )
+        map[.soundVolumeUp] = FeatureMetadata(displayPriority: 5, implementation: .native, isAction: true)
+        map[.soundVolumeDown] = FeatureMetadata(displayPriority: 6, implementation: .native, isAction: true)
+        map[.soundMuteToggle] = FeatureMetadata(displayPriority: 7, implementation: .native, isAction: true)
 
-        // Energy Display — read-only, no permissions needed
-        map[.cpuMonitor] = FeatureMetadata(installedByDefault: true, displayPriority: 1)
-        map[.gpuMonitor] = FeatureMetadata(installedByDefault: false, displayPriority: 2)
-        map[.memoryMonitor] = FeatureMetadata(installedByDefault: true, displayPriority: 3)
-        map[.networkMonitor] = FeatureMetadata(installedByDefault: false, displayPriority: 4)
+        // ── Window Management (actions, AppleScript-backed) ────────────
+        map[.windowMinimizeAll] = FeatureMetadata(displayPriority: 8, implementation: .native, isAction: true)
+        map[.windowSwitchApp] = FeatureMetadata(displayPriority: 9, implementation: .native, isAction: true)
+
+        // ── Energy Display ─────────────────────────────────────────────
+        // EnergyMonitorService returns fabricated numbers for CPU/memory/network.
+        map[.cpuMonitor] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 1,
+            implementation: .simulated
+        )
+        map[.gpuMonitor] = FeatureMetadata(displayPriority: 2)
+        map[.memoryMonitor] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 3,
+            implementation: .simulated
+        )
+        map[.networkMonitor] = FeatureMetadata(displayPriority: 4, implementation: .simulated)
         map[.batteryDisplay] = FeatureMetadata(installedByDefault: true, displayPriority: 5)
 
-        // Tools
-        map[.keepAwake] = FeatureMetadata(installedByDefault: true, displayPriority: 1)
+        // ── Tools ──────────────────────────────────────────────────────
+        // KeepAwakeService uses a real IOPMAssertion — the one fully-native
+        // stateful feature.
+        map[.keepAwake] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 1,
+            implementation: .native
+        )
         map[.portControl] = FeatureMetadata(
             requiresPermission: .fullDiskAccess,
-            installedByDefault: false,
             displayPriority: 2
         )
         map[.processKiller] = FeatureMetadata(
@@ -232,30 +283,33 @@ public final class FeatureCatalog {
         )
         map[.fileShredder] = FeatureMetadata(
             requiresPermission: .fullDiskAccess,
-            installedByDefault: false,
             displayPriority: 4
         )
         map[.colorPicker] = FeatureMetadata(
             requiresPermission: .screenRecording,
-            installedByDefault: false,
             displayPriority: 5
         )
 
-        // Dynamic Island
+        // ── Dynamic Island ─────────────────────────────────────────────
+        // macOS has no native Dynamic Island API — pure simulation with
+        // fabricated metrics.
         map[.dynamicIslandEnabled] = FeatureMetadata(
             hardwareRequirement: .dynamicIslandOnly,
             installedByDefault: true,
-            displayPriority: 1
+            displayPriority: 1,
+            implementation: .simulated
         )
         map[.dynamicIslandShowCPU] = FeatureMetadata(
             hardwareRequirement: .dynamicIslandOnly,
             installedByDefault: true,
-            displayPriority: 2
+            displayPriority: 2,
+            implementation: .simulated
         )
         map[.dynamicIslandShowBattery] = FeatureMetadata(
             hardwareRequirement: .dynamicIslandOnly,
             installedByDefault: true,
-            displayPriority: 3
+            displayPriority: 3,
+            implementation: .simulated
         )
 
         return map

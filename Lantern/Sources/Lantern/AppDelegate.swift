@@ -24,6 +24,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 应用面板窗口（懒加载）
     private var panelWindow: NSWindow?
 
+    /// Global click monitor: dismiss the panel when clicking outside it.
+    private var outsideClickMonitor: Any?
+
+    /// Notification observer token for the in-panel close button / Esc.
+    private var closeObserver: Any?
+
     /// True only when the panel window actually exists and is on screen.
     /// Never derive this from persisted UserDefaults — a stale "true" from a
     /// previous launch made clicks call hidePanel() on a nil window, so the
@@ -44,6 +50,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 设置菜单栏右键菜单（Quit 等）
         setupMainMenu()
         
+        // Close button / Esc inside the panel posts a notification.
+        closeObserver = NotificationCenter.default.addObserver(
+            forName: .lanternClosePanel,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.hidePanel()
+        }
+
         // 注册服务实例到 FeatureRuntime
         registerServices()
         
@@ -137,8 +152,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         window.makeKeyAndOrderFront(nil)
         panelWindow = window
+        installOutsideClickMonitor()
 
         UserDefaults.standard.setValue(true, forKey: DefaultsKey.panelVisible.rawValue)
+    }
+
+    /// Dismiss the panel when the user clicks anywhere outside it — the
+    /// expected behaviour for a menu-bar popover. Skip clicks on the status
+    /// bar item itself: those go through togglePanel() and would double-fire.
+    private func installOutsideClickMonitor() {
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            guard let self = self, let window = self.panelWindow, window.isVisible else { return }
+            let mouse = NSEvent.mouseLocation
+            // Clicks in the menu bar (above the visible frame) are handled by
+            // the status item action; ignore them here to avoid toggling twice.
+            let screen = window.screen ?? NSScreen.main
+            if let visibleMaxY = screen?.visibleFrame.maxY, mouse.y > visibleMaxY { return }
+            if window.frame.contains(mouse) { return }
+            self.hidePanel()
+        }
+    }
+
+    private func removeOutsideClickMonitor() {
+        if let monitor = outsideClickMonitor {
+            NSEvent.removeMonitor(monitor)
+            outsideClickMonitor = nil
+        }
     }
     
     // MARK: - Service Registration
@@ -159,14 +198,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         runtime.register(.cpuMonitor, service: EnergyMonitorService(feature: .cpuMonitor), binding: {})
         runtime.register(.memoryMonitor, service: EnergyMonitorService(feature: .memoryMonitor), binding: {})
         
-        // Phase 6: Window management service
-        runtime.register(.windowMinimizeAll, service: WindowManagerService(feature: .windowMinimizeAll), binding: {})
-        runtime.register(.windowSwitchApp, service: WindowManagerService(feature: .windowSwitchApp), binding: {})
-        
-        // Phase 6: Sound mixer service  
-        runtime.register(.soundVolumeUp, service: SoundMixerService(feature: .soundVolumeUp), binding: {})
-        runtime.register(.soundVolumeDown, service: SoundMixerService(feature: .soundVolumeDown), binding: {})
-        runtime.register(.soundMuteToggle, service: SoundMixerService(feature: .soundMuteToggle), binding: {})
+        // ── One-shot actions ───────────────────────────────────────
+        // Each action holds its own service and calls the real implementation
+        // in its binding. Previously all bindings were {} and these did nothing.
+        let windows = WindowManagerService(feature: .windowMinimizeAll)
+        runtime.register(.windowMinimizeAll, service: windows) { windows.minimizeAll() }
+        runtime.register(.windowSwitchApp, service: windows) { windows.switchToNextApp() }
+
+        let mixer = SoundMixerService(feature: .soundMuteToggle)
+        runtime.register(.soundVolumeUp, service: mixer) { mixer.increaseVolume() }
+        runtime.register(.soundVolumeDown, service: mixer) { mixer.decreaseVolume() }
+        runtime.register(.soundMuteToggle, service: mixer) { mixer.toggleMute() }
         
         // Phase 7: Dynamic Island service (macOS 15+ only)
         if #available(macOS 15.0, *) {
@@ -178,6 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     /// 隐藏面板
     func hidePanel() {
+        removeOutsideClickMonitor()
         panelWindow?.close()
         panelWindow = nil
         
