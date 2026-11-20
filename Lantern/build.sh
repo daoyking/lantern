@@ -103,6 +103,7 @@ build() {
         -target "$TARGET" -sdk "$SDK" \
         -module-name Lantern \
         -framework SwiftUI \
+        -framework CoreTransferable \
         -Xcc -fPIC \
         "${SOURCES[@]}" \
         -o ".build/${mode}/${APP_NAME}"
