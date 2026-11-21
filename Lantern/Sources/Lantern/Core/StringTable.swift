@@ -43,6 +43,79 @@ public enum Language: String, CaseIterable, Identifiable {
     }
 }
 
+/// 应用内语言选择。默认简体中文，也可跟随系统或强制英文。
+public enum AppLanguage: String, CaseIterable, Identifiable {
+    case system = "system"
+    case simplifiedChinese = "zh-Hans"
+    case english = "en"
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .system: return L("language.system", "Follow System")
+        case .simplifiedChinese: return "简体中文"
+        case .english: return "English"
+        }
+    }
+
+    private static let preferenceKey = "lantern.appLanguage"
+
+    public static var current: AppLanguage {
+        get {
+            let stored = UserDefaults.standard.string(forKey: preferenceKey) ?? ""
+            return AppLanguage(rawValue: stored) ?? .simplifiedChinese
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: preferenceKey)
+            NotificationCenter.default.post(name: .lanternLanguageChanged, object: nil)
+        }
+    }
+
+    /// "跟随系统" 的具体落点：中文系统（含繁体）走简体中文，其余英文。
+    public static var resolved: AppLanguage {
+        guard current != .system else {
+            let preferred = Locale.preferredLanguages.first ?? "en"
+            return preferred.lowercased().hasPrefix("zh") ? .simplifiedChinese : .english
+        }
+        return current
+    }
+
+    /// 显式加载对应 .lproj，避免系统语言与应用内选择不一致。
+    public var bundle: Bundle {
+        switch self {
+        case .system:
+            return Bundle.main
+        case .simplifiedChinese, .english:
+            guard let path = Bundle.main.path(forResource: rawValue, ofType: "lproj"),
+                  let bundle = Bundle(path: path) else { return Bundle.main }
+            return bundle
+        }
+    }
+}
+
+extension Notification.Name {
+    /// 语言切换后让 SwiftUI 视图整体刷新（菜单是启动时构建的，需重启更新）。
+    public static let lanternLanguageChanged = Notification.Name("lanternLanguageChanged")
+}
+
+/// 统一查表入口：命中 .strings 就用译文，否则用代码里的英文兜底。
+/// @inline(__always) 让热路径（每次列表刷新）没有额外开销。
+@inline(__always)
+public func L(_ key: String, _ englishFallback: String) -> String {
+    AppLanguage.resolved.bundle.localizedString(
+        forKey: key, value: englishFallback, table: nil
+    )
+}
+
+/// File-scope indirection: inside `LocalizedString`, the bare name `L` resolves
+/// to its own static initializer, so go through this helper to reach the
+/// module-level lookup function.
+@inline(__always)
+private func lookupLocalized(_ key: String, _ fallback: String) -> String {
+    L(key, fallback)
+}
+
 /// Centralized string table providing compile-time safety
 public struct Strings {
     // MARK: - App-level strings
@@ -136,8 +209,7 @@ public struct LocalizedString {
 
     /// Returns the localized string for the current language
     public var value: String {
-        let bundle = Bundle.main
-        return bundle.localizedString(forKey: key, value: defaultValue, table: nil)
+        lookupLocalized(key, defaultValue)
     }
 }
 

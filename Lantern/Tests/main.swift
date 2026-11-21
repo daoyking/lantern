@@ -207,5 +207,86 @@ Check.that(!runtime.activeFeatures.contains(action), "动作型初始不应在 a
 runtime.toggle(action) // 无 binding 时应安全 no-op，不崩溃、不锁状态
 Check.that(!runtime.activeFeatures.contains(action), "动作型 toggle 后不应进入 activeFeatures")
 
+print("▶ 17. 简体中文资源完整：每个功能名称/描述、分组、通用文案都有译文")
+let stringsPath = FileManager.default.currentDirectoryPath
+    + "/Resources/zh-Hans.lproj/Localizable.strings"
+let translationTable = NSDictionary(contentsOfFile: stringsPath) as? [String: String]
+Check.that(translationTable != nil, "zh-Hans Localizable.strings 应能解析")
+if let table = translationTable {
+    Check.that(table.count >= 150, "译文条目数应覆盖全部 UI，实际 \(table.count)")
+    for f in AppFeature.allCases {
+        let nameKey = "feature.\(f.rawValue).name"
+        let descKey = "feature.\(f.rawValue).desc"
+        Check.that(!(table[nameKey] ?? "").isEmpty, "\(f.rawValue) 缺少中文名称")
+        Check.that(!(table[descKey] ?? "").isEmpty, "\(f.rawValue) 缺少中文描述")
+    }
+    for g in FeatureGroup.allCases {
+        Check.that(!(table["group.\(g.rawValue).name"] ?? "").isEmpty, "\(g.rawValue) 缺少中文组名")
+        Check.that(!(table["group.\(g.rawValue).short"] ?? "").isEmpty, "\(g.rawValue) 缺少中文短标签")
+    }
+    for key in ["ui.settings", "ui.done", "ui.quit", "ui.runNow", "settings.language",
+                "hint.needsPermission", "hint.closePanel", "permission.accessibility",
+                "badge.simulated", "badge.stub", "onboarding_welcome",
+                "snap.left", "snap.right", "snap.top", "snap.bottom", "snap.full", "snap.menuTitle"] {
+        Check.that(!(table[key] ?? "").isEmpty, "通用文案 \(key) 缺少译文")
+    }
+    Check.that(table["hint.needsPermission"]?.contains("%@") == true,
+               "带参数的提示文案必须保留格式占位符")
+    Check.that(table["settings.panelOpacity"]?.contains("%d%%") == true,
+               "百分比文案必须保留格式占位符")
+}
+
+print("▶ 18. 语言默认值与真实 bundle 查表")
+UserDefaults.standard.removeObject(forKey: "lantern.appLanguage")
+Check.that(AppLanguage.current == .simplifiedChinese, "未设置语言时应默认简体中文")
+Check.that(AppLanguage.resolved == .simplifiedChinese, "默认解析语言应为简体中文")
+AppLanguage.current = .english
+Check.that(AppLanguage.current == .english, "语言选择应可持久化")
+Check.that(L("ui.settings", "Settings") == "Settings", "英文模式应回退到代码兜底文案")
+UserDefaults.standard.removeObject(forKey: "lantern.appLanguage")
+
+// 真实 app bundle（构建后存在）里的 .lproj 必须能被查到并返中文
+let builtApp = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    .appendingPathComponent(".build/release/Lantern.app")
+if FileManager.default.fileExists(atPath: builtApp.path),
+   let bundle = Bundle(url: builtApp),
+   bundle.path(forResource: "zh-Hans", ofType: "lproj") != nil,
+   let zhBundle = Bundle(path: bundle.path(forResource: "zh-Hans", ofType: "lproj")!) {
+    Check.that(zhBundle.localizedString(forKey: "ui.settings", value: "Settings", table: nil) == "设置",
+               "构建产物中的中文查表应返回「设置」")
+    Check.that(zhBundle.localizedString(forKey: "feature.cpuMonitor.name", value: "CPU Monitor", table: nil) == "CPU 监控",
+               "构建产物中的功能名应为中文")
+}
+
+print("▶ 19. 四向窗口吸附几何：避开菜单栏/Dock，半屏严格互补")
+let fullScreen = CGRect(x: 0, y: 0, width: 1440, height: 900)
+let usable = CGRect(x: 0, y: 0, width: 1440, height: 845) // 顶部菜单栏占 55pt
+let left = SnapGeometry.rect(for: .left, screen: fullScreen, visible: usable)
+let right = SnapGeometry.rect(for: .right, screen: fullScreen, visible: usable)
+let top = SnapGeometry.rect(for: .top, screen: fullScreen, visible: usable)
+let bottom = SnapGeometry.rect(for: .bottom, screen: fullScreen, visible: usable)
+let full = SnapGeometry.rect(for: .full, screen: fullScreen, visible: usable)
+Check.that(left.minX == 0 && right.maxX == 1440, "左右吸附应贴住屏幕边缘")
+Check.that(left.width + right.width == 1440, "左右半屏宽度应互补")
+Check.that(left.maxX == right.minX, "左右半屏不应重叠或留缝")
+Check.that(left.height == 845 && right.height == 845, "左右吸附应占满可用高度")
+Check.that(top.minY == 55 && bottom.maxY == 900, "上下吸附应避开菜单栏/Dock")
+Check.that(top.height + bottom.height == 845, "上下半屏高度应互补")
+Check.that(top.maxY == bottom.minY, "上下半屏不应重叠或留缝")
+Check.that(full.origin.x == 0 && full.origin.y == 55 && full.width == 1440 && full.height == 845,
+           "铺满屏幕应等于可用区域")
+// 极端：极小屏幕 / Dock 在侧边 / visible 为空都不应产生负尺寸
+for (name, screen, vis) in [
+    ("极小屏幕", CGRect(x: 0, y: 0, width: 320, height: 240), CGRect(x: 0, y: 20, width: 320, height: 220)),
+    ("侧边 Dock", CGRect(x: 0, y: 0, width: 1440, height: 900), CGRect(x: 80, y: 0, width: 1360, height: 870)),
+    ("异常 visible", CGRect(x: 0, y: 0, width: 1000, height: 700), CGRect.zero)
+] {
+    for target in SnapTarget.allCases {
+        let r = SnapGeometry.rect(for: target, screen: screen, visible: vis)
+        Check.that(r.width > 0 && r.height > 0, "\(name) \(target.rawValue) 尺寸应为正")
+        Check.that(r.minX >= screen.minX && r.minY >= screen.minY, "\(name) \(target.rawValue) 不应越出屏幕左上")
+    }
+}
+
 cleanFeaturePrefs()
 Check.finish()

@@ -103,12 +103,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 创建应用主菜单（含 Quit）
     private func setupMainMenu() {
         let appMenu = NSMenu()
-        appMenu.addItem(NSMenuItem(title: String(localized: "menu.about"), action: nil, keyEquivalent: ""))
+        appMenu.addItem(NSMenuItem(title: L("menu.about", "About Lantern"), action: nil, keyEquivalent: ""))
         appMenu.addItem(.separator())
-        appMenu.addItem(NSMenuItem(title: String(localized: "menu.quit"), action: #selector(NSApp.terminate), keyEquivalent: "q"))
-        
+        appMenu.addItem(NSMenuItem(title: L("ui.quit", "Quit Lantern"), action: #selector(NSApp.terminate), keyEquivalent: "q"))
+
         NSApp.mainMenu = NSMenu()
-        let applicationsMenuItem = NSMenuItem(title: String(localized: "app.name"), action: nil, keyEquivalent: "")
+        let applicationsMenuItem = NSMenuItem(title: L("app.name", "Lantern"), action: nil, keyEquivalent: "")
         applicationsMenuItem.submenu = appMenu
         NSApp.mainMenu?.addItem(applicationsMenuItem)
     }
@@ -295,7 +295,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         runtime.register(.windowSwitchApp, service: windows) { windows.switchToNextApp() }
         runtime.register(.hideAllWindows, service: windows) { windows.hideAllWindows() }
         runtime.register(.forceQuitDialog, service: windows) { windows.openForceQuitDialog() }
-        runtime.register(.windowSnap, service: windows) { windows.snapFrontWindow(.left) }
+        runtime.register(.windowSnap, service: windows) {
+            self.showSnapMenu(using: windows)
+        }
 
         let actionsMixer = SoundMixerService(feature: .soundMuteToggle)
         runtime.register(.soundVolumeUp, service: actionsMixer) { actionsMixer.increaseVolume() }
@@ -352,7 +354,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(item)
         }
         if menu.items.isEmpty {
-            menu.addItem(NSMenuItem(title: "No running apps", action: nil, keyEquivalent: ""))
+            menu.addItem(NSMenuItem(title: L("tool.noApps", "No running apps"), action: nil, keyEquivalent: ""))
         }
         // Anchor the menu just below the status item.
         let anchor = statusItemController.statusItemWindow?.frame.origin ?? NSPoint(x: 100, y: 800)
@@ -364,14 +366,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = ProcessKillerService.terminate(pid: pid, force: false)
     }
 
+    /// Four-way window snap — one action button opens a localized direction menu.
+    private func showSnapMenu(using windows: WindowManagerService) {
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: L("snap.menuTitle", "Snap Window To"), action: nil, keyEquivalent: ""))
+        menu.addItem(.separator())
+        for target in SnapTarget.allCases {
+            let item = NSMenuItem(title: target.localizedName,
+                                  action: #selector(snapWindow(_:)),
+                                  keyEquivalent: "")
+            item.target = self
+            item.representedObject = (windows, target)
+            menu.addItem(item)
+        }
+        let anchor = statusItemController.statusItemWindow?.frame.origin ?? NSPoint(x: 100, y: 800)
+        menu.popUp(positioning: nil, at: anchor, in: nil)
+    }
+
+    @objc private func snapWindow(_ sender: NSMenuItem) {
+        guard let payload = sender.representedObject as? (WindowManagerService, SnapTarget) else { return }
+        payload.0.snapFrontWindow(payload.1)
+    }
+
     /// Open a file chooser, then securely overwrite and delete the selection.
     private func shredFilesWithPanel() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = true
-        panel.prompt = "Shred"
-        panel.message = "Select files to securely overwrite and delete"
+        panel.prompt = L("tool.shred", "Shred")
+        panel.message = L("tool.shredMessage", "Select files to securely overwrite and delete")
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {
             try? FileShredderService.shred(path: url.path)

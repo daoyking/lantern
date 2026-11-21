@@ -89,87 +89,91 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         }
     }
 
+    private func localized(_ kind: String, _ englishFallback: String) -> String {
+        L("feature.\(rawValue).\(kind)", englishFallback)
+    }
+
     /// Human-readable label displayed in the menu panel
     public var displayName: String {
         switch self {
-        case .autoHideDock: return "Auto-Hide Dock"
-        case .minimizeOnClickDock: return "Minimize on Dock Click"
-        case .dockSize: return "Dock Size"
-        case .windowSnap: return "Window Snap"
-        case .hideAllWindows: return "Hide All Windows"
-        case .forceQuitDialog: return "Force Quit Dialog"
-        case .invertScroll: return "Invert Scroll Direction"
-        case .mouseSensitivity: return "Mouse Sensitivity"
-        case .keyboardRepeatRate: return "Key Repeat Rate"
-        case .doubleClickSpeed: return "Double-Click Speed"
-        case .cursorSize: return "Cursor Size"
-        case .clipboardHistory: return "Clipboard History"
-        case .pasteAsPlainText: return "Paste as Plain Text"
-        case .syncClipboardAcrossDevices: return "Sync Clipboard"
-        case .volumeMixer: return "Volume Mixer"
-        case .inputDeviceSelect: return "Input Device"
-        case .audioToggle: return "Audio Toggle"
-        case .notificationSound: return "Notification Sound"
-        case .windowMinimizeAll: return "Minimize All Windows"
-        case .windowSwitchApp: return "Switch App (Cmd+Tab)"
-        case .soundVolumeUp: return "Volume Up +5%"
-        case .soundVolumeDown: return "Volume Down -5%"
-        case .soundMuteToggle: return "Toggle Mute"
-        case .cpuMonitor: return "CPU Monitor"
-        case .gpuMonitor: return "GPU Monitor"
-        case .memoryMonitor: return "Memory Monitor"
-        case .networkMonitor: return "Network Monitor"
-        case .batteryDisplay: return "Battery Display"
-        case .keepAwake: return "Keep Awake"
-        case .portControl: return "Port Control"
-        case .processKiller: return "Process Killer"
-        case .fileShredder: return "File Shredder"
-        case .colorPicker: return "Color Picker"
-        case .dynamicIslandEnabled: return "Dynamic Island"
-        case .dynamicIslandShowCPU: return "Island: CPU"
-        case .dynamicIslandShowBattery: return "Island: Battery"
+        case .autoHideDock: return localized("name", "Auto-Hide Dock")
+        case .minimizeOnClickDock: return localized("name", "Minimize on Dock Click")
+        case .dockSize: return localized("name", "Dock Size")
+        case .windowSnap: return localized("name", "Window Snap")
+        case .hideAllWindows: return localized("name", "Hide All Windows")
+        case .forceQuitDialog: return localized("name", "Force Quit Dialog")
+        case .invertScroll: return localized("name", "Invert Scroll Direction")
+        case .mouseSensitivity: return localized("name", "Mouse Sensitivity")
+        case .keyboardRepeatRate: return localized("name", "Key Repeat Rate")
+        case .doubleClickSpeed: return localized("name", "Double-Click Speed")
+        case .cursorSize: return localized("name", "Cursor Size")
+        case .clipboardHistory: return localized("name", "Clipboard History")
+        case .pasteAsPlainText: return localized("name", "Paste as Plain Text")
+        case .syncClipboardAcrossDevices: return localized("name", "Sync Clipboard")
+        case .volumeMixer: return localized("name", "Volume Mixer")
+        case .inputDeviceSelect: return localized("name", "Input Device")
+        case .audioToggle: return localized("name", "Audio Toggle")
+        case .notificationSound: return localized("name", "Notification Sound")
+        case .windowMinimizeAll: return localized("name", "Minimize All Windows")
+        case .windowSwitchApp: return localized("name", "Switch App (Cmd+Tab)")
+        case .soundVolumeUp: return localized("name", "Volume Up +5%")
+        case .soundVolumeDown: return localized("name", "Volume Down -5%")
+        case .soundMuteToggle: return localized("name", "Toggle Mute")
+        case .cpuMonitor: return localized("name", "CPU Monitor")
+        case .gpuMonitor: return localized("name", "GPU Monitor")
+        case .memoryMonitor: return localized("name", "Memory Monitor")
+        case .networkMonitor: return localized("name", "Network Monitor")
+        case .batteryDisplay: return localized("name", "Battery Display")
+        case .keepAwake: return localized("name", "Keep Awake")
+        case .portControl: return localized("name", "Port Control")
+        case .processKiller: return localized("name", "Process Killer")
+        case .fileShredder: return localized("name", "File Shredder")
+        case .colorPicker: return localized("name", "Color Picker")
+        case .dynamicIslandEnabled: return localized("name", "Dynamic Island")
+        case .dynamicIslandShowCPU: return localized("name", "Island: CPU")
+        case .dynamicIslandShowBattery: return localized("name", "Island: Battery")
         }
     }
 
     /// Description shown in tooltip or settings panel
     public var descriptionText: String {
         switch self {
-        case .autoHideDock: return "Automatically hide the Dock when space is needed"
-        case .minimizeOnClickDock: return "Minimize windows when clicking their Dock icon"
-        case .dockSize: return "Toggle between larger and default Dock icon size"
-        case .windowSnap: return "Snap the frontmost window to the left half"
-        case .hideAllWindows: return "Hide all app windows (Option+Command+H)"
-        case .forceQuitDialog: return "Open the system Force Quit dialog"
-        case .invertScroll: return "Reverse scroll direction (system preference)"
-        case .mouseSensitivity: return "Set pointer speed and open Mouse settings"
-        case .keyboardRepeatRate: return "Set key repeat rate (faster / default)"
-        case .doubleClickSpeed: return "Open Mouse settings to adjust double-click speed"
-        case .cursorSize: return "Open Display settings to adjust cursor size"
-        case .clipboardHistory: return "Maintain clipboard history across sessions"
-        case .pasteAsPlainText: return "Always paste content as unformatted text"
-        case .syncClipboardAcrossDevices: return "Sync clipboard text across devices via iCloud"
-        case .volumeMixer: return "Open Sound settings (per-app mixer has no public API)"
-        case .inputDeviceSelect: return "Switch to the next Core Audio input device"
-        case .audioToggle: return "Mute/unmute system audio via Core Audio"
-        case .notificationSound: return "Open Sound settings for notification sounds"
-        case .windowMinimizeAll: return "Minimize all windows with one click"
-        case .windowSwitchApp: return "Switch to next app (like Cmd+Tab)"
-        case .soundVolumeUp: return "Increase system volume by 5%"
-        case .soundVolumeDown: return "Decrease system volume by 5%"
-        case .soundMuteToggle: return "Toggle system mute state"
-        case .cpuMonitor: return "Live CPU usage from Mach host statistics"
-        case .gpuMonitor: return "GPU model via system_profiler (no public utilization API)"
-        case .memoryMonitor: return "Live memory usage from VM statistics"
-        case .networkMonitor: return "Live upload/download rates from network interfaces"
-        case .batteryDisplay: return "Battery percentage and charging state (IOKit)"
-        case .keepAwake: return "Prevent Mac from sleeping automatically"
-        case .portControl: return "Open Network settings (port control needs root)"
-        case .processKiller: return "Choose a running app and terminate it"
-        case .fileShredder: return "Overwrite and delete files you select"
-        case .colorPicker: return "Pick an on-screen color and copy its hex"
-        case .dynamicIslandEnabled: return "Enable Dynamic Island integration"
-        case .dynamicIslandShowCPU: return "Show CPU stats in Dynamic Island"
-        case .dynamicIslandShowBattery: return "Show battery status in Dynamic Island"
+        case .autoHideDock: return localized("desc", "Automatically hide the Dock when space is needed")
+        case .minimizeOnClickDock: return localized("desc", "Minimize windows when clicking their Dock icon")
+        case .dockSize: return localized("desc", "Toggle between larger and default Dock icon size")
+        case .windowSnap: return localized("desc", "Snap the frontmost window to the left half")
+        case .hideAllWindows: return localized("desc", "Hide all app windows (Option+Command+H)")
+        case .forceQuitDialog: return localized("desc", "Open the system Force Quit dialog")
+        case .invertScroll: return localized("desc", "Reverse scroll direction (system preference)")
+        case .mouseSensitivity: return localized("desc", "Set pointer speed and open Mouse settings")
+        case .keyboardRepeatRate: return localized("desc", "Set key repeat rate (faster / default)")
+        case .doubleClickSpeed: return localized("desc", "Open Mouse settings to adjust double-click speed")
+        case .cursorSize: return localized("desc", "Open Display settings to adjust cursor size")
+        case .clipboardHistory: return localized("desc", "Maintain clipboard history across sessions")
+        case .pasteAsPlainText: return localized("desc", "Always paste content as unformatted text")
+        case .syncClipboardAcrossDevices: return localized("desc", "Sync clipboard text across devices via iCloud")
+        case .volumeMixer: return localized("desc", "Open Sound settings (per-app mixer has no public API)")
+        case .inputDeviceSelect: return localized("desc", "Switch to the next Core Audio input device")
+        case .audioToggle: return localized("desc", "Mute/unmute system audio via Core Audio")
+        case .notificationSound: return localized("desc", "Open Sound settings for notification sounds")
+        case .windowMinimizeAll: return localized("desc", "Minimize all windows with one click")
+        case .windowSwitchApp: return localized("desc", "Switch to next app (like Cmd+Tab)")
+        case .soundVolumeUp: return localized("desc", "Increase system volume by 5%")
+        case .soundVolumeDown: return localized("desc", "Decrease system volume by 5%")
+        case .soundMuteToggle: return localized("desc", "Toggle system mute state")
+        case .cpuMonitor: return localized("desc", "Live CPU usage from Mach host statistics")
+        case .gpuMonitor: return localized("desc", "GPU model via system_profiler (no public utilization API)")
+        case .memoryMonitor: return localized("desc", "Live memory usage from VM statistics")
+        case .networkMonitor: return localized("desc", "Live upload/download rates from network interfaces")
+        case .batteryDisplay: return localized("desc", "Battery percentage and charging state (IOKit)")
+        case .keepAwake: return localized("desc", "Prevent Mac from sleeping automatically")
+        case .portControl: return localized("desc", "Open Network settings (port control needs root)")
+        case .processKiller: return localized("desc", "Choose a running app and terminate it")
+        case .fileShredder: return localized("desc", "Overwrite and delete files you select")
+        case .colorPicker: return localized("desc", "Pick an on-screen color and copy its hex")
+        case .dynamicIslandEnabled: return localized("desc", "Enable Dynamic Island integration")
+        case .dynamicIslandShowCPU: return localized("desc", "Show CPU stats in Dynamic Island")
+        case .dynamicIslandShowBattery: return localized("desc", "Show battery status in Dynamic Island")
         }
     }
 }
@@ -186,17 +190,24 @@ public enum FeatureGroup: String, CaseIterable, Identifiable {
 
     public var id: String { rawValue }
 
+    /// Full localized group title
+    public var localizedName: String {
+        L("group.\(rawValue).name", rawValue)
+    }
+
     /// Compact label for the narrow tab bar (full rawValue overflows at 320pt)
     public var shortLabel: String {
-        switch self {
-        case .windowsDock: return "Windows"
-        case .mouseKeyboard: return "Mouse"
-        case .clipboard: return "Clipboard"
-        case .sound: return "Sound"
-        case .energyDisplay: return "Energy"
-        case .tools: return "Tools"
-        case .dynamicIsland: return "Island"
-        }
+        L("group.\(rawValue).short", {
+            switch self {
+            case .windowsDock: return "Windows"
+            case .mouseKeyboard: return "Mouse"
+            case .clipboard: return "Clipboard"
+            case .sound: return "Sound"
+            case .energyDisplay: return "Energy"
+            case .tools: return "Tools"
+            case .dynamicIsland: return "Island"
+            }
+        }())
     }
 
     public var icon: String {

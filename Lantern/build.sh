@@ -78,6 +78,7 @@ build() {
         Sources/Lantern/Core/PanelLayout.swift
         Sources/Lantern/Core/StatusItemController.swift
         Sources/Lantern/Core/StringTable.swift
+        Sources/Lantern/Core/WindowSnapGeometry.swift
         Sources/Lantern/Services/ClipboardEnhancementService.swift
         Sources/Lantern/Services/ClipboardService.swift
         Sources/Lantern/Services/DynamicIslandService.swift
@@ -130,6 +131,15 @@ build() {
     plutil -replace CFBundleIdentifier -string "${BUNDLE_ID}" "$app_path/Contents/Info.plist"
     plutil -replace CFBundleShortVersionString -string "${VERSION%-*}" "$app_path/Contents/Info.plist"
     plutil -replace CFBundleVersion -string "${VERSION#*-}" "$app_path/Contents/Info.plist"
+    plutil -replace CFBundleName -string "${APP_NAME}" "$app_path/Contents/Info.plist"
+    plutil -replace LSMinimumSystemVersion -string "14.0" "$app_path/Contents/Info.plist"
+
+    # Bundle .lproj resources — without these every L() call falls back to
+    # the English literal embedded in Swift source.
+    for lproj in Resources/*.lproj; do
+        [[ -d "$lproj" ]] || continue
+        cp -R "$lproj" "$app_path/Contents/Resources/"
+    done
 
     log_info "Binary built at: ${app_path}"
 }

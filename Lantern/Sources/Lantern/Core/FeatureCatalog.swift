@@ -21,6 +21,16 @@ public enum ImplementationLevel: String {
         case .stub: return "未实现"
         }
     }
+
+    /// UI-facing badge — keeps the stable `badge` contract used by tests while
+    /// rendering "DEMO" as 演示 in the Chinese build.
+    public var localizedBadge: String {
+        switch self {
+        case .native: return ""
+        case .simulated: return L("badge.simulated", "DEMO")
+        case .stub: return L("badge.stub", "Not Implemented")
+        }
+    }
 }
 
 /// Describes when and how a feature should appear in the menu panel
@@ -68,12 +78,12 @@ public enum PermissionType: Equatable {
 
     public var humanReadableName: String {
         switch self {
-        case .accessibility: return "Accessibility"
-        case .screenRecording: return "Screen Recording"
-        case .fullDiskAccess: return "Full Disk Access"
-        case .notifications: return "Notifications"
-        case .camera: return "Camera"
-        case .microphone: return "Microphone"
+        case .accessibility: return L("permission.accessibility", "Accessibility")
+        case .screenRecording: return L("permission.screenRecording", "Screen Recording")
+        case .fullDiskAccess: return L("permission.fullDiskAccess", "Full Disk Access")
+        case .notifications: return L("permission.notifications", "Notifications")
+        case .camera: return L("permission.camera", "Camera")
+        case .microphone: return L("permission.microphone", "Microphone")
         case .none: return ""
         }
     }
@@ -98,9 +108,9 @@ public enum HardwareRequirement: Equatable {
 
     public var requirementLabel: String? {
         switch self {
-        case .dynamicIslandOnly: return "Dynamic Island (MacBook Pro 2023+)"
-        case .appleSiliconOnly: return "Apple Silicon"
-        case .externalDisplayOnly: return "External Display"
+        case .dynamicIslandOnly: return L("hardware.dynamicIslandOnly", "Dynamic Island (MacBook Pro 2023+)")
+        case .appleSiliconOnly: return L("hardware.appleSiliconOnly", "Apple Silicon")
+        case .externalDisplayOnly: return L("hardware.externalDisplayOnly", "External Display")
         case .none: return nil
         }
     }

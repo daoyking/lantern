@@ -7,6 +7,8 @@ struct MenuPanelView: View {
     @ObservedObject private var permissions = Permissions.shared
     @State private var selectedTab: FeatureGroup = .windowsDock
     @State private var showSettings = false
+    /// Increment on in-app language change so every Text/Button re-evaluates L().
+    @State private var languageTick = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -36,6 +38,10 @@ struct MenuPanelView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(permissions)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .lanternLanguageChanged)) { _ in
+            languageTick += 1
+        }
+        .id(languageTick)
     }
 
     // MARK: - Header
@@ -57,7 +63,8 @@ struct MenuPanelView: View {
                         .foregroundStyle(.orange)
                 }
                 .buttonStyle(.plain)
-                .help("\(deniedPerm.humanReadableName) permission required — click to grant")
+                .help(String(format: L("hint.permissionRequired", "%@ permission required — click to grant"),
+                             deniedPerm.humanReadableName))
             }
 
             Button {
@@ -67,7 +74,7 @@ struct MenuPanelView: View {
                     .foregroundStyle(PanelSurface.secondary)
             }
             .buttonStyle(.plain)
-            .help("Settings")
+            .help(L("ui.settings", "Settings"))
 
             // Close button — the panel is a borderless NSPanel with no titlebar
             // controls, so without this there was no in-panel way to dismiss it.
@@ -78,7 +85,7 @@ struct MenuPanelView: View {
                     .foregroundStyle(PanelSurface.secondary)
             }
             .buttonStyle(.plain)
-            .help("Close panel (Esc)")
+            .help(L("hint.closePanel", "Close panel (Esc)"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -117,7 +124,7 @@ struct MenuPanelView: View {
                     Image(systemName: "tray")
                         .font(.title2)
                         .foregroundStyle(PanelSurface.tertiary)
-                    Text("No features in this group")
+                    Text(L("ui.emptyGroup", "No features in this group"))
                         .font(.caption)
                         .foregroundStyle(PanelSurface.secondary)
                 }
@@ -140,7 +147,7 @@ struct MenuPanelView: View {
 
     private var panelFooter: some View {
         HStack(spacing: 12) {
-            Text("Lantern v\(MenuPanelView.appVersion)")
+            Text(String(format: L("ui.version", "Lantern v%@"), MenuPanelView.appVersion))
                 .font(.caption2)
                 .foregroundStyle(PanelSurface.tertiary)
 
@@ -151,14 +158,14 @@ struct MenuPanelView: View {
                     .foregroundStyle(PanelSurface.secondary)
             }
             .buttonStyle(.plain)
-            .help("View source on GitHub")
+            .help(L("hint.viewSource", "View source on GitHub"))
 
             Button(action: quitApp) {
                 Image(systemName: "power")
                     .foregroundStyle(.red)
             }
             .buttonStyle(.plain)
-            .help("Quit Lantern")
+            .help(L("ui.quit", "Quit Lantern"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -268,13 +275,14 @@ struct FeatureRow: View {
                                 .foregroundStyle(.orange)
                         }
                         .buttonStyle(.plain)
-                        .help("Needs \(perm.humanReadableName) permission — click to grant")
+                        .help(String(format: L("hint.needsPermission", "Needs %@ permission — click to grant"),
+                                     perm.humanReadableName))
                     }
 
                     // Honest implementation badge so users can tell real
                     // integrations from demos and placeholders.
-                    if !metadata.implementation.badge.isEmpty {
-                        Text(metadata.implementation.badge)
+                    if !metadata.implementation.localizedBadge.isEmpty {
+                        Text(metadata.implementation.localizedBadge)
                             .font(.system(size: 8, weight: .semibold))
                             .foregroundStyle(metadata.implementation == .simulated ? .orange : .secondary)
                             .padding(.horizontal, 4)
@@ -305,7 +313,7 @@ struct FeatureRow: View {
                         .foregroundStyle(PanelSurface.accent)
                 }
                 .buttonStyle(.plain)
-                .help("Run now")
+                .help(L("ui.runNow", "Run now"))
             } else {
                 Toggle(isOn: Binding(
                     get: { runtime.activeFeatures.contains(feature) },

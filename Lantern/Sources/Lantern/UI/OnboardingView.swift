@@ -21,7 +21,7 @@ struct OnboardingView: View {
             // Navigation buttons
             HStack {
                 if currentStep > 0 {
-                    Button("Back") {
+                    Button(L("ui.back", "Back")) {
                         withAnimation { currentStep -= 1 }
                     }
                     .buttonStyle(.plain)
@@ -31,12 +31,12 @@ struct OnboardingView: View {
                 Spacer()
                 
                 if currentStep < totalSteps - 1 {
-                    Button("Next") {
+                    Button(L("ui.next", "Next")) {
                         withAnimation { currentStep += 1 }
                     }
                     .buttonStyle(.borderedProminent)
                 } else {
-                    Button("Get Started") {
+                    Button(L("ui.getStarted", "Get Started")) {
                         finishOnboarding()
                     }
                     .buttonStyle(.borderedProminent)
@@ -93,7 +93,7 @@ struct OnboardingView: View {
                 .font(.title2)
                 .fontWeight(.bold)
             
-            Text("Your all-in-one menu bar companion for macOS.")
+            Text(L("onboarding.subtitle", "Your all-in-one menu bar companion for macOS."))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -105,7 +105,7 @@ struct OnboardingView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.blue)
             
-            Text("Quick Access to Useful Tools")
+            Text(L("onboarding.purposeTitle", "Quick Access to Useful Tools"))
                 .font(.title2)
                 .fontWeight(.bold)
             
@@ -121,7 +121,7 @@ struct OnboardingView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.orange)
             
-            Text("Permissions Required")
+            Text(L("permission.required", "Permissions Required"))
                 .font(.title2)
                 .fontWeight(.bold)
             
@@ -129,7 +129,7 @@ struct OnboardingView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             
-            Button("Open System Preferences") {
+            Button(L("ui.openSystemSettings", "Open System Settings")) {
                 Permissions.shared.openSystemPreferences()
             }
             .buttonStyle(.bordered)
@@ -146,7 +146,7 @@ struct OnboardingView: View {
                 .font(.title2)
                 .fontWeight(.bold)
             
-            Text("Lantern is ready to use!")
+            Text(L("onboarding.ready", "Lantern is ready to use!"))
                 .foregroundStyle(.secondary)
         }
     }

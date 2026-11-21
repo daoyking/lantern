@@ -11,36 +11,36 @@ struct DynamicIslandView: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            Text("Dynamic Island Preview")
+            Text(L("island.preview", "Dynamic Island Preview"))
                 .font(.headline)
             
             // Compact mode
             HStack {
-                Text("Compact:")
+                Text(L("island.compact", "Compact:"))
                     .frame(width: 60, alignment: .leading)
                 DynamicIslandCompact(service: service)
             }
             
             // Expanded mode
             HStack {
-                Text("Expanded:")
+                Text(L("island.expanded", "Expanded:"))
                     .frame(width: 60, alignment: .leading)
                 DynamicIslandExpanded(service: service)
             }
             
             // Controls
             HStack(spacing: 12) {
-                Button("Toggle Mode") {
+                Button(L("island.toggleMode", "Toggle Mode")) {
                     service.toggleMode()
                 }
                 .buttonStyle(.bordered)
                 
-                Button("Set CPU") {
+                Button(L("island.setCPU", "Set CPU")) {
                     service.setContent(.cpuUsage)
                 }
                 .buttonStyle(.bordered)
                 
-                Button("Set Memory") {
+                Button(L("island.setMemory", "Set Memory")) {
                     service.setContent(.memoryUsage)
                 }
                 .buttonStyle(.bordered)
@@ -112,7 +112,7 @@ struct DynamicIslandExpanded: View {
                         .foregroundColor(content.color)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(content.rawValue)
+                        Text(L("island.content.\(content.rawValue)", content.rawValue))
                             .font(.system(size: 10))
                             .foregroundColor(.secondary)
                         Text(metricValue(for: content))

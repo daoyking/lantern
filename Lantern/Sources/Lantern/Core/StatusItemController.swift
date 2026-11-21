@@ -10,8 +10,8 @@ class StatusItemController {
     
     /// 菜单项标签前缀
     private enum MenuItemLabel {
-        static let togglePanel = "Open Lantern"
-        static let quit = "Quit Lantern"
+        static var togglePanel: String { L("menu.open", "Open Lantern") }
+        static var quit: String { L("ui.quit", "Quit Lantern") }
     }
     
     // MARK: - Properties

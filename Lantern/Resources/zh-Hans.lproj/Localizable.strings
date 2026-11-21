@@ -1,0 +1,200 @@
+/* Lantern 简体中文界面文案 */
+
+"app_name" = "Lantern";
+"app.name" = "Lantern";
+"menu_title" = "Lantern";
+"menu.open" = "打开 Lantern";
+"menu.about" = "关于 Lantern";
+"ui.quit" = "退出 Lantern";
+"quit" = "退出 Lantern";
+
+"features" = "功能";
+"tools" = "工具";
+"settings" = "设置";
+
+"onboarding_welcome" = "欢迎使用 Lantern";
+"onboarding.subtitle" = "你的 macOS 菜单栏全能小助手。";
+"onboarding_purpose" = "在菜单栏快速调用各种实用工具。";
+"onboarding.purposeTitle" = "常用工具，触手可及";
+"onboarding_permissions" = "授予权限即可解锁全部功能。";
+"onboarding_done" = "一切就绪！";
+"onboarding.ready" = "Lantern 现在就可以使用了！";
+
+"permission.required" = "需要权限";
+"permission.grant" = "授予权限";
+"grant_permission" = "授予权限";
+"grant_and_continue" = "授予并继续";
+"permission_required" = "需要权限";
+"permission.accessibility" = "辅助功能";
+"permission.screenRecording" = "屏幕录制";
+"permission.fullDiskAccess" = "完全磁盘访问权限";
+"permission.notifications" = "通知";
+"permission.camera" = "相机";
+"permission.microphone" = "麦克风";
+
+"error_title" = "错误";
+"unknown_error" = "发生意外错误。";
+
+"hardware.dynamicIslandOnly" = "灵动岛（MacBook Pro 2023 及更新机型）";
+"hardware.appleSiliconOnly" = "Apple 芯片";
+"hardware.externalDisplayOnly" = "外接显示器";
+
+"badge.simulated" = "演示";
+"badge.stub" = "未实现";
+
+"language.system" = "跟随系统";
+
+"hint.permissionRequired" = "需要「%@」权限 — 点击以授权";
+"hint.needsPermission" = "需要「%@」权限 — 点击以授权";
+"hint.closePanel" = "关闭面板（Esc）";
+"hint.viewSource" = "在 GitHub 查看源码";
+"hint.languageNote" = "面板文字立即生效；右键菜单文字需重启应用后更新。";
+
+"ui.settings" = "设置";
+"ui.done" = "完成";
+"ui.grantPermission" = "授予权限";
+"ui.back" = "上一步";
+"ui.next" = "下一步";
+"ui.getStarted" = "开始使用";
+"ui.openSystemSettings" = "打开系统设置";
+"ui.emptyGroup" = "此分组暂无功能";
+"ui.version" = "Lantern v%@";
+"ui.runNow" = "立即执行";
+
+"settings.general" = "通用";
+"settings.language" = "语言";
+"settings.panel" = "面板";
+"settings.panelOpacity" = "面板不透明度：%d%%";
+"settings.animations" = "显示动画";
+"settings.notifications" = "通知";
+"settings.enableNotifications" = "启用通知";
+"settings.about" = "关于";
+"settings.version" = "版本";
+"settings.bundleId" = "Bundle ID";
+"settings.license" = "许可证";
+
+"snap.left" = "左半屏";
+"snap.right" = "右半屏";
+"snap.top" = "上半屏";
+"snap.bottom" = "下半屏";
+"snap.full" = "铺满屏幕";
+"snap.menuTitle" = "窗口吸附到";
+
+"tool.noApps" = "没有正在运行的应用";
+"tool.shred" = "粉碎";
+"tool.shredMessage" = "选择要安全覆写并删除的文件";
+
+"island.preview" = "灵动岛预览";
+"island.compact" = "紧凑：";
+"island.expanded" = "展开：";
+"island.toggleMode" = "切换模式";
+"island.setCPU" = "显示 CPU";
+"island.setMemory" = "显示内存";
+"island.content.CPU" = "CPU";
+"island.content.Memory" = "内存";
+"island.content.Battery" = "电池";
+"island.content.Volume" = "音量";
+"island.content.Network" = "网络";
+
+"group.Windows & Dock.name" = "窗口与 Dock";
+"group.Mouse & Keyboard.name" = "鼠标与键盘";
+"group.Clipboard.name" = "剪贴板";
+"group.Sound.name" = "声音";
+"group.Energy Display.name" = "能耗显示";
+"group.Tools.name" = "工具";
+"group.Dynamic Island.name" = "灵动岛";
+
+"group.Windows & Dock.short" = "窗口";
+"group.Mouse & Keyboard.short" = "鼠标";
+"group.Clipboard.short" = "剪贴板";
+"group.Sound.short" = "声音";
+"group.Energy Display.short" = "能耗";
+"group.Tools.short" = "工具";
+"group.Dynamic Island.short" = "灵动岛";
+
+"group_windows_dock" = "窗口与 Dock";
+"group_mouse_keyboard" = "鼠标与键盘";
+"group_clipboard" = "剪贴板";
+"group_sound" = "声音";
+"group_energy_display" = "能耗显示";
+"group_tools" = "工具";
+"group_dynamic_island" = "灵动岛";
+
+"feature.autoHideDock.name" = "自动隐藏 Dock";
+"feature.autoHideDock.desc" = "空间不足时自动隐藏 Dock";
+"feature.minimizeOnClickDock.name" = "点击 Dock 图标最小化";
+"feature.minimizeOnClickDock.desc" = "点击应用的 Dock 图标时最小化窗口";
+"feature.dockSize.name" = "Dock 图标大小";
+"feature.dockSize.desc" = "在大号与默认 Dock 图标尺寸之间切换";
+"feature.windowSnap.name" = "窗口吸附";
+"feature.windowSnap.desc" = "将最前方窗口吸附到屏幕左半侧";
+"feature.hideAllWindows.name" = "隐藏所有窗口";
+"feature.hideAllWindows.desc" = "隐藏所有应用窗口（Option+Command+H）";
+"feature.forceQuitDialog.name" = "强制退出对话框";
+"feature.forceQuitDialog.desc" = "打开系统强制退出对话框";
+
+"feature.invertScroll.name" = "反转滚动方向";
+"feature.invertScroll.desc" = "反转滚动方向（系统偏好设置）";
+"feature.mouseSensitivity.name" = "指针速度";
+"feature.mouseSensitivity.desc" = "设置指针速度并打开鼠标设置";
+"feature.keyboardRepeatRate.name" = "按键重复速率";
+"feature.keyboardRepeatRate.desc" = "设置按键重复速率（更快／默认）";
+"feature.doubleClickSpeed.name" = "双击速度";
+"feature.doubleClickSpeed.desc" = "打开鼠标设置以调整双击速度";
+"feature.cursorSize.name" = "光标大小";
+"feature.cursorSize.desc" = "打开显示器设置以调整光标大小";
+
+"feature.clipboardHistory.name" = "剪贴板历史";
+"feature.clipboardHistory.desc" = "跨会话保留剪贴板历史";
+"feature.pasteAsPlainText.name" = "纯文本粘贴";
+"feature.pasteAsPlainText.desc" = "始终以无格式文本粘贴内容";
+"feature.syncClipboardAcrossDevices.name" = "跨设备剪贴板同步";
+"feature.syncClipboardAcrossDevices.desc" = "通过 iCloud 在各设备间同步剪贴板文本";
+
+"feature.volumeMixer.name" = "音量混合器";
+"feature.volumeMixer.desc" = "打开声音设置（单应用音量无公开 API）";
+"feature.inputDeviceSelect.name" = "输入设备";
+"feature.inputDeviceSelect.desc" = "切换到下一个 Core Audio 输入设备";
+"feature.audioToggle.name" = "音频开关";
+"feature.audioToggle.desc" = "通过 Core Audio 静音／取消静音";
+"feature.notificationSound.name" = "通知提示音";
+"feature.notificationSound.desc" = "打开声音设置调整通知提示音";
+"feature.windowMinimizeAll.name" = "最小化所有窗口";
+"feature.windowMinimizeAll.desc" = "一键最小化所有窗口";
+"feature.windowSwitchApp.name" = "切换应用（Cmd+Tab）";
+"feature.windowSwitchApp.desc" = "切换到下一个应用（类似 Cmd+Tab）";
+"feature.soundVolumeUp.name" = "音量 +5%";
+"feature.soundVolumeUp.desc" = "将系统音量提高 5%";
+"feature.soundVolumeDown.name" = "音量 -5%";
+"feature.soundVolumeDown.desc" = "将系统音量降低 5%";
+"feature.soundMuteToggle.name" = "切换静音";
+"feature.soundMuteToggle.desc" = "切换系统静音状态";
+
+"feature.cpuMonitor.name" = "CPU 监控";
+"feature.cpuMonitor.desc" = "从 Mach 主机统计读取实时 CPU 占用";
+"feature.gpuMonitor.name" = "GPU 监控";
+"feature.gpuMonitor.desc" = "通过 system_profiler 读取 GPU 型号（无公开利用率 API）";
+"feature.memoryMonitor.name" = "内存监控";
+"feature.memoryMonitor.desc" = "从虚拟机统计读取实时内存占用";
+"feature.networkMonitor.name" = "网络监控";
+"feature.networkMonitor.desc" = "从网络接口读取实时上传／下载速率";
+"feature.batteryDisplay.name" = "电池显示";
+"feature.batteryDisplay.desc" = "电池百分比与充电状态（IOKit）";
+
+"feature.keepAwake.name" = "防止休眠";
+"feature.keepAwake.desc" = "阻止 Mac 自动休眠";
+"feature.portControl.name" = "端口管控";
+"feature.portControl.desc" = "打开网络设置（端口管控需要 root 权限）";
+"feature.processKiller.name" = "进程管理";
+"feature.processKiller.desc" = "选择正在运行的应用并结束它";
+"feature.fileShredder.name" = "文件粉碎";
+"feature.fileShredder.desc" = "覆写并删除你选择的文件";
+"feature.colorPicker.name" = "取色器";
+"feature.colorPicker.desc" = "拾取屏幕颜色并复制十六进制值";
+
+"feature.dynamicIslandEnabled.name" = "灵动岛";
+"feature.dynamicIslandEnabled.desc" = "启用灵动岛集成";
+"feature.dynamicIslandShowCPU.name" = "灵动岛：CPU";
+"feature.dynamicIslandShowCPU.desc" = "在灵动岛显示 CPU 数据";
+"feature.dynamicIslandShowBattery.name" = "灵动岛：电池";
+"feature.dynamicIslandShowBattery.desc" = "在灵动岛显示电池状态";
