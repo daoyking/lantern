@@ -17,6 +17,9 @@ public final class ClipboardService: BaseFeatureService {
     @Published public private(set) var history: [ClipboardItem] = []
     private let maxHistorySize = 50
 
+    /// History survives relaunches (JSON in defaults, capped like memory).
+    public static let storageKey = "lantern_clipboard_history"
+
     private let pasteboard = NSPasteboard.general
     
     // MARK: - Timer-based monitoring
@@ -26,6 +29,7 @@ public final class ClipboardService: BaseFeatureService {
     public override init(feature: AppFeature) {
         super.init(feature: feature)
         Self.shared = self
+        restoreHistory()
     }
     
     public override func start() throws {
@@ -64,6 +68,7 @@ public final class ClipboardService: BaseFeatureService {
         if history.count > maxHistorySize {
             history.removeLast(history.count - maxHistorySize)
         }
+        persistHistory()
         #if DEBUG
         print("[Lantern] ClipboardService: New content detected (\(min(text.count, 30)) chars)")
         #endif
@@ -103,12 +108,28 @@ public final class ClipboardService: BaseFeatureService {
     public func clearHistory() {
         history.removeAll()
         lastContentHash = nil
+        persistHistory()
+    }
+
+    // MARK: - History persistence
+
+    private func persistHistory() {
+        guard let data = try? JSONEncoder().encode(history) else { return }
+        UserDefaults.standard.set(data, forKey: Self.storageKey)
+    }
+
+    /// Load the persisted history back; entries keep their timestamps so the
+    /// list reads the same as before the relaunch.
+    private func restoreHistory() {
+        guard let data = UserDefaults.standard.data(forKey: Self.storageKey),
+              let stored = try? JSONDecoder().decode([ClipboardItem].self, from: data) else { return }
+        history = stored
     }
 }
 
 // MARK: - Data Types
 
-public enum ClipboardItemType: String, CaseIterable, Identifiable {
+public enum ClipboardItemType: String, CaseIterable, Identifiable, Codable {
     case string = "Text"
     case url = "URL"
     case image = "Image"
@@ -128,11 +149,18 @@ public enum ClipboardItemType: String, CaseIterable, Identifiable {
     }
 }
 
-public struct ClipboardItem: Identifiable, Equatable, Hashable {
-    public let id: UUID = UUID()
+public struct ClipboardItem: Identifiable, Equatable, Hashable, Codable {
+    public let id: UUID
     public let type: ClipboardItemType
     public let content: String
     public let timestamp: Date
+
+    public init(type: ClipboardItemType, content: String, timestamp: Date) {
+        self.id = UUID()
+        self.type = type
+        self.content = content
+        self.timestamp = timestamp
+    }
     
     public static func == (lhs: ClipboardItem, rhs: ClipboardItem) -> Bool {
         lhs.id == rhs.id

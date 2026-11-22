@@ -42,7 +42,7 @@ class StatusItemController {
         }
         
         // 设置图标（简单方块，后续可替换为 SVG/PNG）
-        item.button?.image = NSImage(systemSymbolName: "square.on.rectangle.fill", accessibilityDescription: "Lantern")
+        item.button?.image = NSImage(systemSymbolName: "lightbulb.fill", accessibilityDescription: "Lantern")
         
         // IMPORTANT: DO NOT set item.menu here. When a status item has a menu,
         // macOS intercepts left-clicks to show the menu and never fires the

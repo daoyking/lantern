@@ -83,6 +83,12 @@ final class DownloadMonitorService: BaseFeatureService {
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: item.path)])
     }
 
+    /// Double-click: open the finished file; partial downloads only reveal.
+    public func open(_ item: DownloadItem) {
+        guard !item.isPartial else { reveal(item); return }
+        NSWorkspace.shared.open(URL(fileURLWithPath: item.path))
+    }
+
     /// Human-readable size, e.g. "1.2 MB".
     public static func formatSize(_ bytes: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)

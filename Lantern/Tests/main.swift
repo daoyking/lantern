@@ -726,5 +726,26 @@ do {
                "快捷启动优先级应递增")
 }
 
+// ▶30 剪贴板历史持久化：写入→新实例恢复→清空持久化
+do {
+    print("▶30 剪贴板持久化")
+    UserDefaults.standard.removeObject(forKey: ClipboardService.storageKey)
+    let itemA = ClipboardItem(type: .string, content: "hello-lantern", timestamp: Date())
+    let itemB = ClipboardItem(type: .url, content: "https://example.com", timestamp: Date())
+    let data = try JSONEncoder().encode([itemA, itemB])
+    UserDefaults.standard.set(data, forKey: ClipboardService.storageKey)
+    let service = ClipboardService(feature: .clipboardHistory)
+    Check.that(service.getHistory().count == 2 &&
+               service.getHistory().first?.content == "hello-lantern",
+               "新实例应恢复已持久化的历史")
+    service.clearHistory()
+    let cleared = try? JSONDecoder().decode([ClipboardItem].self,
+        from: UserDefaults.standard.data(forKey: ClipboardService.storageKey) ?? Data())
+    Check.that(cleared != nil && cleared?.isEmpty == true,
+               "清空应持久化空数组")
+    Check.that(service.getHistory().isEmpty, "清空后内存历史为空")
+    UserDefaults.standard.removeObject(forKey: ClipboardService.storageKey)
+}
+
 cleanFeaturePrefs()
 Check.finish()

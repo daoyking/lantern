@@ -35,8 +35,19 @@ public final class WindowManagerService: BaseFeatureService {
         }
     }
     
+    /// Cycle to the next regular running app via NSWorkspace — a real
+    /// activation, no Accessibility keystroke needed.
     public func switchToNextApp() {
-        runScript("tell application \"System Events\" to key tab using command down")
+        let workspace = NSWorkspace.shared
+        let current = workspace.frontmostApplication
+        let candidates = workspace.runningApplications.filter {
+            $0.activationPolicy == .regular && !$0.isHidden && $0 != current
+        }
+        guard let next = candidates.first else { return }
+        // activate(options:) is deprecated on macOS 14+ but remains the only
+        // public cross-app activation; silence the warning intentionally.
+        _ = next.processIdentifier
+        next.activate(options: [.activateAllWindows])
     }
 
     /// Real window snapping via Accessibility (System Events). The target
@@ -62,8 +73,15 @@ public final class WindowManagerService: BaseFeatureService {
     }
 
     /// Hide all regular apps (equivalent of Cmd+Opt+H) — real system action.
+    /// Hide every regular app except the frontmost one and Finder (the
+    /// desktop stays alive). Real NSRunningApplication.hide() — no TCC.
     public func hideAllWindows() {
-        runScript("tell application \"System Events\" to keystroke \"h\" using {command down, option down}")
+        let current = NSWorkspace.shared.frontmostApplication
+        for app in NSWorkspace.shared.runningApplications
+        where app.activationPolicy == .regular && !app.isHidden &&
+              app != current && app.bundleIdentifier != "com.apple.finder" {
+            app.hide()
+        }
     }
 
     /// Open the OS force-quit dialog (Cmd+Opt+Esc) — real system action.

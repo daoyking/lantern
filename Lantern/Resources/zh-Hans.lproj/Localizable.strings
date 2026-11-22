@@ -129,7 +129,7 @@
 "feature.windowSnap.name" = "窗口吸附";
 "feature.windowSnap.desc" = "将最前方窗口吸附到屏幕左半侧";
 "feature.hideAllWindows.name" = "隐藏所有窗口";
-"feature.hideAllWindows.desc" = "隐藏所有应用窗口（Option+Command+H）";
+"feature.hideAllWindows.desc" = "瞬间隐藏其他应用的窗口（显露桌面）";
 "feature.forceQuitDialog.name" = "强制退出对话框";
 "feature.forceQuitDialog.desc" = "打开系统强制退出对话框";
 
@@ -161,8 +161,8 @@
 "feature.notificationSound.desc" = "打开声音设置调整通知提示音";
 "feature.windowMinimizeAll.name" = "最小化所有窗口";
 "feature.windowMinimizeAll.desc" = "一键最小化所有窗口";
-"feature.windowSwitchApp.name" = "切换应用（Cmd+Tab）";
-"feature.windowSwitchApp.desc" = "切换到下一个应用（类似 Cmd+Tab）";
+"feature.windowSwitchApp.name" = "切换应用";
+"feature.windowSwitchApp.desc" = "循环切换到下一个运行中的应用（无需辅助功能）";
 "feature.soundVolumeUp.name" = "音量 +5%";
 "feature.soundVolumeUp.desc" = "将系统音量提高 5%";
 "feature.soundVolumeDown.name" = "音量 -5%";
@@ -307,3 +307,4 @@
 "radar.empty" = "扫描中，附近暂无设备";
 "radar.off" = "蓝牙未开启";
 "radar.rescan" = "重新扫描";
+"downloads.openHint" = "单击显示，双击打开";
