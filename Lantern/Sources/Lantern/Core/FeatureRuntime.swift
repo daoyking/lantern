@@ -101,6 +101,8 @@ public final class FeatureRuntime: ObservableObject {
     /// Toggle a feature on/off (used by menu panel actions).
     /// Action-type features (volume step, switch app, minimize all) run their
     /// one-shot effect instead of latching a state.
+    /// Starting a gated feature without its macOS permission opens the
+    /// permission prompt instead of running something that would fail.
     public func toggle(_ feature: AppFeature) {
         if FeatureCatalog.shared.metadata(for: feature).isAction {
             performAction(feature)
@@ -109,15 +111,36 @@ public final class FeatureRuntime: ObservableObject {
         if activeFeatures.contains(feature) {
             stop(feature)
         } else {
+            guard gate(feature) else { return }
             start(feature)
         }
     }
 
     /// Execute a one-shot action through its registered binding. Action
     /// features do not persist an "on" state — clicking is the whole effect.
+    /// Gated actions check their permission first for the same reason.
     public func performAction(_ feature: AppFeature) {
+        guard gate(feature) else { return }
         bindings[feature]?()
         objectWillChange.send()
+    }
+
+    // MARK: - Permission gate
+
+    /// Single permission checkpoint for every user-initiated activation.
+    /// Returns true when the feature may run; when blocked, asks for the
+    /// missing permission (opening the relevant System Settings pane) so the
+    /// click still has visible effect instead of failing silently.
+    /// Only user-initiated paths route through here — syncFromDefaults →
+    /// start() deliberately bypasses it so a revoked permission never pops a
+    /// System Settings window at app launch.
+    private func gate(_ feature: AppFeature) -> Bool {
+        guard let perm = FeatureCatalog.shared.metadata(for: feature).requiresPermission,
+              perm != .none,
+              !Permissions.shared.isGranted(perm)
+        else { return true }
+        Permissions.shared.request(perm)
+        return false
     }
 
     // MARK: - Refresh

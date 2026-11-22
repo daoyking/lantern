@@ -65,8 +65,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 同步 feature 状态到 UserDefaults
         FeatureRuntime.shared.syncFromDefaults()
         
-        // 启动权限监控
-        // PermissionMonitor.shared.startMonitoring()
+        // 权限监控：Permissions.shared 在 init 里启动 2.5s 轮询。
+        // 这里显式触碰一次，让首次检查发生在启动时刻（而不是等面板第一次
+        // 打开才惰性初始化）——菜单栏 Agent 可能很久不开面板。
+        _ = Permissions.shared
         
         Logger.info("Lantern launched — Bundle: \(Bundle.main.bundleIdentifier ?? "unknown")")
     }

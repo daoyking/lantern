@@ -132,6 +132,13 @@ struct MenuPanelView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
+                        // Clipboard tab gains a live history list above the
+                        // feature rows — the collected entries were previously
+                        // invisible to the user. Observed so new captures
+                        // re-render the list live.
+                        if group == .clipboard, let clipboard = ClipboardService.shared {
+                            ClipboardHistorySection(service: clipboard)
+                        }
                         ForEach(features, id: \.self) { feature in
                             FeatureRow(feature: feature)
                         }
@@ -304,25 +311,27 @@ struct FeatureRow: View {
 
             Spacer(minLength: 8)
 
-            // One-shot actions render as a button; stateful features as a switch.
+            // One-shot actions render as a button; stateful features as a
+            // switch. Permission gating lives in FeatureRuntime — a click on
+            // a locked row asks for the permission instead of running an
+            // action that would silently fail. (The UI used to request the
+            // permission too, opening System Settings twice.)
             if metadata.isAction {
                 Button {
                     runtime.performAction(feature)
                 } label: {
                     Image(systemName: "arrow.right.circle.fill")
-                        .foregroundStyle(PanelSurface.accent)
+                        .foregroundStyle(isLocked ? .orange : PanelSurface.accent)
                 }
                 .buttonStyle(.plain)
-                .help(L("ui.runNow", "Run now"))
+                .help(isLocked
+                      ? String(format: L("hint.needsPermission", "Needs %@ permission — click to grant"),
+                               requiredPermission?.humanReadableName ?? "")
+                      : L("ui.runNow", "Run now"))
             } else {
                 Toggle(isOn: Binding(
                     get: { runtime.activeFeatures.contains(feature) },
-                    set: { newValue in
-                        if newValue, let perm = requiredPermission, !permissionGranted {
-                            permissions.request(perm)
-                        }
-                        runtime.toggle(feature)
-                    }
+                    set: { _ in runtime.toggle(feature) }
                 )) {
                     EmptyView()
                 }
@@ -338,6 +347,133 @@ struct FeatureRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(PanelSurface.cardBorder, lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Clipboard History
+
+/// Live clipboard history list shown at the top of the Clipboard tab.
+/// Reads the shared ClipboardService registered at launch; nothing renders
+/// before registration, and a hint replaces the list until the feature's
+/// switch is on (collection only runs while the service is started).
+struct ClipboardHistorySection: View {
+    @ObservedObject var service: ClipboardService
+    @StateObject private var runtime = FeatureRuntime.shared
+    @State private var copiedItemID: UUID?
+
+    private var isActive: Bool { runtime.activeFeatures.contains(.clipboardHistory) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "clipboard")
+                    .font(.caption)
+                    .foregroundStyle(PanelSurface.accent)
+                Text(L("clipboard.history.title", "Clipboard History"))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(PanelSurface.secondary)
+                Spacer()
+                if !service.history.isEmpty {
+                    Button {
+                        service.clearHistory()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.caption)
+                            .foregroundStyle(PanelSurface.tertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(L("clipboard.history.clear", "Clear history"))
+                }
+            }
+
+            if !isActive {
+                Text(L("clipboard.history.hintOff",
+                       "Turn on the switch below to start recording"))
+                    .font(.caption2)
+                    .foregroundStyle(PanelSurface.tertiary)
+            } else if service.history.isEmpty {
+                Text(L("clipboard.history.empty",
+                       "Copy anything anywhere — it will show up here"))
+                    .font(.caption2)
+                    .foregroundStyle(PanelSurface.tertiary)
+            } else {
+                ForEach(Array(service.history.prefix(8))) { item in
+                    ClipboardHistoryRow(
+                        item: item,
+                        copied: copiedItemID == item.id
+                    ) {
+                        service.copy(item)
+                        copiedItemID = item.id
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            if copiedItemID == item.id { copiedItemID = nil }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .background(PanelSurface.cardBackground)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(PanelSurface.cardBorder, lineWidth: 1)
+        )
+    }
+}
+
+/// One tappable history entry: click copies the content back to the
+/// clipboard (the standard restore behaviour of history managers).
+struct ClipboardHistoryRow: View {
+    let item: ClipboardItem
+    let copied: Bool
+    let action: () -> Void
+
+    private static let relativeTime: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter
+    }()
+
+    private var typeIcon: String {
+        switch item.type {
+        case .string: return "doc.plaintext"
+        case .url: return "link"
+        case .image: return "photo"
+        case .fileURL: return "folder"
+        case .rtfd: return "doc.richtext"
+        }
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: copied ? "checkmark.circle.fill" : typeIcon)
+                    .font(.caption)
+                    .foregroundStyle(copied ? .green : PanelSurface.tertiary)
+                    .frame(width: 16)
+
+                Text(item.content)
+                    .font(.caption)
+                    .foregroundStyle(PanelSurface.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                Spacer(minLength: 4)
+
+                Text(Self.relativeTime.localizedString(for: item.timestamp, relativeTo: Date()))
+                    .font(.caption2)
+                    .foregroundStyle(PanelSurface.tertiary)
+            }
+            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.white.opacity(copied ? 0.12 : 0.04))
+            )
+        }
+        .buttonStyle(.plain)
+        .help(L("clipboard.history.copyBack", "Copy back to clipboard"))
     }
 }
 

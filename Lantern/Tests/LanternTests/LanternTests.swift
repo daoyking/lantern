@@ -41,16 +41,55 @@ final class LanternTests: XCTestCase {
     /// switch never changed state. Every catalog feature must now toggle.
     func testEveryFeatureCanToggleWithoutAService() {
         for feature in AppFeature.allCases {
+            let meta = FeatureCatalog.shared.metadata(for: feature)
             XCTAssertFalse(runtime.activeFeatures.contains(feature),
                            "\(feature.rawValue) should start inactive")
 
             runtime.toggle(feature)
-            XCTAssertTrue(runtime.activeFeatures.contains(feature),
-                          "toggle ON failed for \(feature.rawValue) (dead switch regression)")
 
-            runtime.toggle(feature)
-            XCTAssertFalse(runtime.activeFeatures.contains(feature),
-                           "toggle OFF failed for \(feature.rawValue)")
+            // One-shot actions never latch into activeFeatures.
+            if meta.isAction {
+                XCTAssertFalse(runtime.activeFeatures.contains(feature),
+                               "\(feature.rawValue) is an action — must not latch")
+                continue
+            }
+
+            // Permission-gated stateful features must not activate before
+            // their macOS permission is granted (the gate asks instead).
+            let gated = meta.requiresPermission != nil
+                && meta.requiresPermission != .none
+                && !Permissions.shared.isGranted(meta.requiresPermission!)
+            if gated {
+                XCTAssertFalse(runtime.activeFeatures.contains(feature),
+                               "\(feature.rawValue) is permission-gated — must stay inactive")
+            } else {
+                XCTAssertTrue(runtime.activeFeatures.contains(feature),
+                              "toggle ON failed for \(feature.rawValue) (dead switch regression)")
+                runtime.toggle(feature)
+                XCTAssertFalse(runtime.activeFeatures.contains(feature),
+                               "toggle OFF failed for \(feature.rawValue)")
+            }
+        }
+    }
+
+    /// A permission-gated action must not fire its binding until the macOS
+    /// permission is granted — the gate requests the permission instead.
+    func testPermissionGateBlocksActionWithoutGrant() {
+        let perm = FeatureCatalog.shared.metadata(for: .windowSnap).requiresPermission
+        XCTAssertEqual(perm, .accessibility,
+                       "windowSnap runs System Events — it must be AX-gated")
+
+        var bindingFired = false
+        runtime.register(.windowSnap,
+                         service: PreferenceToggleService(feature: .windowSnap, on: {}, off: {}),
+                         binding: { bindingFired = true })
+        defer { runtime.unregister(.windowSnap) }
+
+        runtime.performAction(.windowSnap)
+        if Permissions.shared.isGranted(.accessibility) {
+            XCTAssertTrue(bindingFired, "granted AX → binding should run")
+        } else {
+            XCTAssertFalse(bindingFired, "ungranted AX → gate must block the binding")
         }
     }
 

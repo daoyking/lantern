@@ -4,11 +4,20 @@ import Foundation
 import AppKit
 
 /// Service managing clipboard operations and history
+///
+/// Observable so the menu panel can render the live history list. The single
+/// instance created in AppDelegate.registerServices() is published as
+/// `shared` so SwiftUI views can reach it without touching the runtime's
+/// private service dictionary.
 public final class ClipboardService: BaseFeatureService {
-    
-    private let pasteboard = NSPasteboard.general
-    private var history: [ClipboardItem] = []
+
+    /// The instance registered with FeatureRuntime — nil until registration.
+    public private(set) static var shared: ClipboardService?
+
+    @Published public private(set) var history: [ClipboardItem] = []
     private let maxHistorySize = 50
+
+    private let pasteboard = NSPasteboard.general
     
     // MARK: - Timer-based monitoring
     private var monitorTimer: Timer?
@@ -16,6 +25,7 @@ public final class ClipboardService: BaseFeatureService {
     
     public override init(feature: AppFeature) {
         super.init(feature: feature)
+        Self.shared = self
     }
     
     public override func start() throws {
@@ -65,10 +75,18 @@ public final class ClipboardService: BaseFeatureService {
     
     // MARK: - Public API
     
-    /// Copy text to clipboard
+    /// Copy text to clipboard.
+    /// Records the hash so the monitor does not immediately re-capture the
+    /// same content as a "new" entry (duplicate rows in the history list).
     public func copy(_ text: String) {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+        lastContentHash = text.hashValue.description
+    }
+
+    /// Re-copy a history entry back to the clipboard (history restore).
+    public func copy(_ item: ClipboardItem) {
+        copy(item.content)
     }
     
     /// Get current clipboard content

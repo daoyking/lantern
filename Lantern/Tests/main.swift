@@ -288,5 +288,36 @@ for (name, screen, vis) in [
     }
 }
 
+print("▶ 20. 权限门控：未授权 feature 的 action 被拦截，不执行 binding")
+
+/// Minimal probe service for gate tests (keeps run-tests.sh compile list
+/// Core-only — no real service files needed).
+final class GateProbeService: BaseFeatureService {}
+
+var gateBindingFired = false
+runtime.register(.windowSnap,
+                 service: GateProbeService(feature: .windowSnap),
+                 binding: { gateBindingFired = true })
+runtime.performAction(.windowSnap)
+if Permissions.shared.isGranted(.accessibility) {
+    Check.that(gateBindingFired, "辅助功能已授权时 action 应正常执行")
+} else {
+    Check.that(!gateBindingFired, "辅助功能未授权时 action 应被拦截（而非静默失败）")
+}
+runtime.unregister(.windowSnap)
+
+// 状态型：门控发生在 start 之前，未授权时既不激活也不持久化
+if let gated = AppFeature.allCases.first(where: {
+    let p = FeatureCatalog.shared.metadata(for: $0).requiresPermission
+    return p != nil && p != PermissionType.none && !Permissions.shared.isGranted(p!)
+}) {
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.featureEnabledKey(gated.rawValue))
+    runtime.toggle(gated)
+    Check.that(!runtime.activeFeatures.contains(gated),
+               "\(gated.rawValue) 未授权时 toggle 不应激活")
+    Check.that(!UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey(gated.rawValue)),
+               "\(gated.rawValue) 未授权时 toggle 不应持久化 enabled")
+}
+
 cleanFeaturePrefs()
 Check.finish()

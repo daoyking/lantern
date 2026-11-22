@@ -198,3 +198,10 @@
 "feature.dynamicIslandShowCPU.desc" = "在灵动岛显示 CPU 数据";
 "feature.dynamicIslandShowBattery.name" = "灵动岛：电池";
 "feature.dynamicIslandShowBattery.desc" = "在灵动岛显示电池状态";
+
+/* Clipboard history panel */
+"clipboard.history.title" = "剪贴板历史";
+"clipboard.history.clear" = "清空历史";
+"clipboard.history.hintOff" = "打开下方「剪贴板历史」开关开始记录";
+"clipboard.history.empty" = "在任意应用复制内容，会显示在这里";
+"clipboard.history.copyBack" = "复制回剪贴板";

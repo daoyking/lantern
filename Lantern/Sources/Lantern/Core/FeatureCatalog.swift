@@ -261,7 +261,6 @@ public final class FeatureCatalog {
         // Core Audio for volume/mute/input device. Volume step / mute /
         // switch-input are one-shot actions, not persistent toggles.
         map[.volumeMixer] = FeatureMetadata(
-            requiresPermission: .accessibility,
             installedByDefault: true,
             displayPriority: 1,
             implementation: .stub  // per-app mixer has no public API; opens Sound pane
@@ -273,7 +272,6 @@ public final class FeatureCatalog {
             installedByDefault: true, displayPriority: 3, implementation: .native
         )
         map[.notificationSound] = FeatureMetadata(
-            requiresPermission: .notifications,
             displayPriority: 4,
             implementation: .stub  // system-wide notification sounds have no public toggle
         )
@@ -282,8 +280,20 @@ public final class FeatureCatalog {
         map[.soundMuteToggle] = FeatureMetadata(displayPriority: 7, implementation: .native, isAction: true)
 
         // ── Window Management (actions, AppleScript-backed) ────────────
-        map[.windowMinimizeAll] = FeatureMetadata(displayPriority: 8, implementation: .native, isAction: true)
-        map[.windowSwitchApp] = FeatureMetadata(displayPriority: 9, implementation: .native, isAction: true)
+        // Every entry runs `System Events` AppleScript — Accessibility TCC
+        // is genuinely required for all five (previously only three were
+        // marked, so minimize-all / switch-app failed silently on a fresh
+        // install). volumeMixer/notificationSound/portControl/processKiller/
+        // fileShredder/colorPicker never touch TCC-gated APIs: their old
+        // permission labels were wrong and are removed.
+        map[.windowMinimizeAll] = FeatureMetadata(
+            requiresPermission: .accessibility,
+            displayPriority: 8, implementation: .native, isAction: true
+        )
+        map[.windowSwitchApp] = FeatureMetadata(
+            requiresPermission: .accessibility,
+            displayPriority: 9, implementation: .native, isAction: true
+        )
 
         // ── Energy Display ─────────────────────────────────────────────
         // All metrics are read live from Mach/IOKit/BSD via SystemMetrics.
@@ -307,30 +317,29 @@ public final class FeatureCatalog {
         // ── Tools ──────────────────────────────────────────────────────
         // KeepAwake uses a real IOPMAssertion. Process/shred/colour are real
         // one-shot actions. Port control needs root → honest settings fallback.
+        // None of these touch TCC-gated APIs: process kill is same-user kill(),
+        // shredder files are picked via NSOpenPanel (user-granted access),
+        // NSColorSampler needs no screen-recording permission.
         map[.keepAwake] = FeatureMetadata(
             installedByDefault: true,
             displayPriority: 1,
             implementation: .native
         )
         map[.portControl] = FeatureMetadata(
-            requiresPermission: .fullDiskAccess,
             displayPriority: 2,
             implementation: .stub
         )
         map[.processKiller] = FeatureMetadata(
-            requiresPermission: .accessibility,
             displayPriority: 3,
             implementation: .native,
             isAction: true
         )
         map[.fileShredder] = FeatureMetadata(
-            requiresPermission: .fullDiskAccess,
             displayPriority: 4,
             implementation: .native,
             isAction: true
         )
         map[.colorPicker] = FeatureMetadata(
-            requiresPermission: .screenRecording,
             displayPriority: 5,
             implementation: .native,
             isAction: true
