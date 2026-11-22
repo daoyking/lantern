@@ -11,6 +11,7 @@ OUT="${TMPDIR:-/tmp}/lantern_cli_tests"
 
 echo "[TEST] Compiling core logic test driver…"
 xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
+    -module-cache-path "$(pwd)/.build/mc" \
     -F "$SDK/System/Library/Frameworks" \
     -Xlinker -client_name -Xlinker AppKit \
     -o "$OUT" \
@@ -28,6 +29,7 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Services/SystemSettingsService.swift \
     Sources/Lantern/Services/ScrollInversionService.swift \
     Sources/Lantern/Services/DynamicIslandService.swift \
+    Sources/Lantern/Services/IslandWeatherService.swift \
     Sources/Lantern/UI/DynamicIslandView.swift \
     Tests/main.swift
 

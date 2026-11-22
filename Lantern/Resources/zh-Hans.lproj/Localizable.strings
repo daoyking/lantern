@@ -233,3 +233,6 @@
 "island.time" = "时间";
 "island.date" = "日期";
 "island.muted" = "静音";
+"island.weather" = "天气";
+"feature.dynamicIslandShowWeather.name" = "灵动岛：天气";
+"feature.dynamicIslandShowWeather.desc" = "在悬浮岛显示当地天气（自动定位）";

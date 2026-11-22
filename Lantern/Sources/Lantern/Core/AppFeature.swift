@@ -64,6 +64,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case dynamicIslandShowDate = "dynamicIslandShowDate"
     case dynamicIslandShowMemory = "dynamicIslandShowMemory"
     case dynamicIslandShowNetwork = "dynamicIslandShowNetwork"
+    case dynamicIslandShowWeather = "dynamicIslandShowWeather"
 
     /// Unique ID for SwiftUI list identification
     public var id: String { rawValue }
@@ -91,7 +92,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
-             .dynamicIslandShowMemory, .dynamicIslandShowNetwork:
+             .dynamicIslandShowMemory, .dynamicIslandShowNetwork, .dynamicIslandShowWeather:
             return .dynamicIsland
         }
     }
@@ -144,6 +145,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .dynamicIslandShowDate: return localized("name", "Island: Date")
         case .dynamicIslandShowMemory: return localized("name", "Island: Memory")
         case .dynamicIslandShowNetwork: return localized("name", "Island: Network")
+        case .dynamicIslandShowWeather: return localized("name", "Island: Weather")
         }
     }
 
@@ -191,6 +193,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .dynamicIslandShowDate: return localized("desc", "Show the date in the island")
         case .dynamicIslandShowMemory: return localized("desc", "Show memory pressure in the island")
         case .dynamicIslandShowNetwork: return localized("desc", "Show network throughput in the island")
+        case .dynamicIslandShowWeather: return localized("desc", "Show local weather in the island (auto location)")
         }
     }
 }

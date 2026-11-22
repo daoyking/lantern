@@ -82,6 +82,7 @@ build() {
         Sources/Lantern/Services/ClipboardEnhancementService.swift
         Sources/Lantern/Services/ClipboardService.swift
         Sources/Lantern/Services/DynamicIslandService.swift
+        Sources/Lantern/Services/IslandWeatherService.swift
         Sources/Lantern/Services/EnergyMonitorService.swift
         Sources/Lantern/Services/ScrollInversionService.swift
         Sources/Lantern/Services/KeepAwakeService.swift
@@ -110,6 +111,7 @@ build() {
     # -F SDK frameworks: CoreAudioTypes/CoreTransferable are auto-linked and must resolve.
     swiftc "$opt_flags" -incremental -enable-batch-mode \
         -disable-sandbox \
+        -module-cache-path "$(pwd)/.build/mc" \
         -j "$(sysctl -n hw.logicalcpu)" \
         -output-file-map "$file_map" \
         -target "$TARGET" -sdk "$SDK" \

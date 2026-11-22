@@ -98,7 +98,7 @@ final class LanternTests: XCTestCase {
     func testIslandSlotFeaturesAreStatefulToggles() {
         let slots: [AppFeature] = [
             .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
-            .dynamicIslandShowMemory, .dynamicIslandShowNetwork,
+            .dynamicIslandShowMemory, .dynamicIslandShowNetwork, .dynamicIslandShowWeather,
         ]
         for slot in slots {
             XCTAssertEqual(slot.group, .dynamicIsland,
@@ -107,6 +107,20 @@ final class LanternTests: XCTestCase {
                            "\(slot.rawValue) must be a persistent toggle")
             XCTAssertTrue(FeatureCatalog.shared.metadata(for: slot).installedByDefault)
         }
+    }
+
+    /// Open-Meteo payload parsing and WMO→SF-Symbol mapping are pure
+    /// functions — pin them so the island's weather slot stays honest.
+    func testWeatherParsingAndSymbolMapping() {
+        let json = #"{"current":{"temperature_2m":18.4,"weather_code":63}}"#
+        let parsed = IslandWeatherService.parse(json.data(using: .utf8)!)
+        XCTAssertNotNil(parsed)
+        XCTAssertEqual(parsed!.temp, 18.4, accuracy: 0.001)
+        XCTAssertEqual(parsed!.code, 63)
+        XCTAssertNil(IslandWeatherService.parse(Data("{}".utf8)))
+        XCTAssertEqual(IslandWeatherService.symbol(for: 0), "sun.max.fill")
+        XCTAssertEqual(IslandWeatherService.symbol(for: 63), "cloud.rain.fill")
+        XCTAssertEqual(IslandWeatherService.symbol(for: 999), "cloud.fill")
     }
 
     /// The island hid the battery because macOS 27 renamed the IOKit.ps keys

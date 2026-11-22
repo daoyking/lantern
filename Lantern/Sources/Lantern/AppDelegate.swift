@@ -355,6 +355,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (AppFeature.dynamicIslandShowDate, DefaultsKey.islandShowDate, false),
             (AppFeature.dynamicIslandShowMemory, DefaultsKey.islandShowMemory, true),
             (AppFeature.dynamicIslandShowNetwork, DefaultsKey.islandShowNetwork, true),
+            (AppFeature.dynamicIslandShowWeather, DefaultsKey.islandShowWeather, false),
         ] {
             runtime.register(feature, service: PreferenceToggleService(
                 feature: feature,

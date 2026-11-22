@@ -40,6 +40,7 @@ public final class DynamicIslandService: BaseFeatureService {
         var count = 0
         if Self.slotEnabled(.islandShowTime, defaultIfUnset: true) { count += 1 }
         if Self.slotEnabled(.islandShowDate, defaultIfUnset: false) { count += 1 }
+        if Self.slotEnabled(.islandShowWeather, defaultIfUnset: false), weatherTempC != nil { count += 1 }
         if Self.slotEnabled(.islandShowVolume, defaultIfUnset: false), volumePercent >= 0 { count += 1 }
         if Self.slotEnabled(.islandShowCPU, defaultIfUnset: true) { count += 1 }
         if Self.slotEnabled(.islandShowMemory, defaultIfUnset: true) { count += 1 }
@@ -58,6 +59,10 @@ public final class DynamicIslandService: BaseFeatureService {
     /// -1 means the output device exposes no master volume; face hides it.
     @Published public private(set) var volumePercent: Double = -1
     @Published public private(set) var volumeMuted: Bool = false
+    /// Nil means no weather reading yet (slot off, or location denied) —
+    /// the face hides the slot then.
+    @Published public private(set) var weatherTempC: Double?
+    @Published public private(set) var weatherCode: Int?
     /// Refreshed every tick so clock/date slots re-render.
     @Published public private(set) var now: Date = Date()
 
@@ -68,6 +73,9 @@ public final class DynamicIslandService: BaseFeatureService {
     private var panel: NSPanel?
     private var timer: Timer?
     private let metrics = SystemMetrics()
+    /// Weather polling runs only while the island does, and only when the
+    /// slot is on (lazy: no CLLocationManager touch until the island starts).
+    private lazy var weather = IslandWeatherService()
 
     override public init(feature: AppFeature) {
         super.init(feature: feature)
@@ -85,6 +93,7 @@ public final class DynamicIslandService: BaseFeatureService {
     override public func stop() throws {
         timer?.invalidate()
         timer = nil
+        weather.setRunning(false)
         panel?.orderOut(nil)
     }
 
@@ -169,6 +178,12 @@ public final class DynamicIslandService: BaseFeatureService {
         }
         volumePercent = s.volumePercent
         volumeMuted = s.volumeMuted
+        // Weather slot: start/stop the poller to match the toggle, then
+        // mirror its readings into published state for the face.
+        let wantWeather = Self.slotEnabled(.islandShowWeather, defaultIfUnset: false)
+        weather.setRunning(wantWeather)
+        weatherTempC = wantWeather ? weather.temperatureC : nil
+        weatherCode = wantWeather ? weather.weatherCode : nil
         now = Date()
     }
 }

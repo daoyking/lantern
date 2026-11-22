@@ -12,19 +12,21 @@ struct DynamicIslandFace: View {
     @ObservedObject var service: DynamicIslandService
     @AppStorage(DefaultsKey.islandShowTime.rawValue) private var showTime = true
     @AppStorage(DefaultsKey.islandShowDate.rawValue) private var showDate = false
+    @AppStorage(DefaultsKey.islandShowWeather.rawValue) private var showWeather = false
     @AppStorage(DefaultsKey.islandShowVolume.rawValue) private var showVolume = false
     @AppStorage(DefaultsKey.islandShowCPU.rawValue) private var showCPU = true
     @AppStorage(DefaultsKey.islandShowMemory.rawValue) private var showMemory = true
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case time, date, weather, volume, cpu, memory, battery, network }
 
     /// Fixed priority order — enabled slots surface left to right.
     private var enabledSlots: [IslandSlot] {
         var slots: [IslandSlot] = []
         if showTime { slots.append(.time) }
         if showDate { slots.append(.date) }
+        if showWeather, service.weatherTempC != nil { slots.append(.weather) }
         if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
         if showCPU { slots.append(.cpu) }
         if showMemory { slots.append(.memory) }
@@ -72,6 +74,10 @@ struct DynamicIslandFace: View {
             Image(systemName: "calendar")
                 .font(.system(size: 11))
                 .foregroundColor(.pink)
+        case .weather:
+            Image(systemName: IslandWeatherService.symbol(for: service.weatherCode ?? 3))
+                .font(.system(size: 11))
+                .foregroundColor(.cyan)
         case .volume:
             Image(systemName: service.volumeMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
                 .font(.system(size: 11))
@@ -124,6 +130,13 @@ struct DynamicIslandFace: View {
                 Text(L("island.date", "Date"))
                     .font(.system(size: 8))
                     .foregroundColor(.white.opacity(0.55))
+            }
+        case .weather:
+            if let temp = service.weatherTempC {
+                metric(icon: IslandWeatherService.symbol(for: service.weatherCode ?? 3),
+                       color: .cyan,
+                       label: L("island.weather", "Weather"),
+                       value: String(format: "%.0f°", temp))
             }
         case .volume:
             metric(icon: service.volumeMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",

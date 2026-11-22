@@ -390,6 +390,11 @@ public final class FeatureCatalog {
             displayPriority: 8,
             implementation: .native
         )
+        map[.dynamicIslandShowWeather] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 9,
+            implementation: .native
+        )
 
         return map
     }

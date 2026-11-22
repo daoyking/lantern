@@ -404,5 +404,46 @@ Check.that(vol == -1 || (vol >= 0 && vol <= 100), "volumePercent 应为 -1 或 0
 // 恢复时间槽默认开（试用机上面板常用态）
 UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowTime.rawValue)
 
+// ▶23 天气槽：Open-Meteo 解析、WMO 符号映射、槽位开关接线
+print("▶ 23. 天气槽（Open-Meteo 解析 + WMO 符号 + 开关持久化）")
+let sampleJSON = #"{"current":{"time":"2026-11-22T14:00","temperature_2m":18.4,"weather_code":63,"is_day":1}}"#
+let sampleData = sampleJSON.data(using: .utf8)!
+if let parsed = IslandWeatherService.parse(sampleData) {
+    Check.that(abs(parsed.temp - 18.4) < 0.001, "温度应解析为 18.4，实际 \(parsed.temp)")
+    Check.that(parsed.code == 63, "天气码应解析为 63，实际 \(parsed.code)")
+} else {
+    Check.that(false, "样例 JSON 应解析成功")
+}
+Check.that(IslandWeatherService.parse(Data("{}".utf8)) == nil, "缺 current 字段应返回 nil")
+Check.that(IslandWeatherService.parse(Data("not json".utf8)) == nil, "坏 JSON 应返回 nil")
+// WMO 码 → SF Symbol
+Check.that(IslandWeatherService.symbol(for: 0) == "sun.max.fill", "晴应映射 sun.max.fill")
+Check.that(IslandWeatherService.symbol(for: 2) == "cloud.sun.fill", "少云应映射 cloud.sun.fill")
+Check.that(IslandWeatherService.symbol(for: 45) == "cloud.fog.fill", "雾应映射 cloud.fog.fill")
+Check.that(IslandWeatherService.symbol(for: 63) == "cloud.rain.fill", "雨应映射 cloud.rain.fill")
+Check.that(IslandWeatherService.symbol(for: 73) == "cloud.snow.fill", "雪应映射 cloud.snow.fill")
+Check.that(IslandWeatherService.symbol(for: 95) == "cloud.bolt.rain.fill", "雷暴应映射 cloud.bolt.rain.fill")
+Check.that(IslandWeatherService.symbol(for: 999) == "cloud.fill", "未知码应兜底 cloud.fill")
+// 槽位：组归属 + 状态型 + 开关持久化（默认关）
+Check.that(AppFeature.dynamicIslandShowWeather.group == .dynamicIsland, "天气开关应属于 dynamicIsland 组")
+Check.that(!FeatureCatalog.shared.metadata(for: .dynamicIslandShowWeather).isAction, "天气开关应为状态型")
+if runtime.activeFeatures.contains(.dynamicIslandShowWeather) { runtime.stop(.dynamicIslandShowWeather) }
+runtime.register(.dynamicIslandShowWeather, service: PreferenceToggleService(
+    feature: .dynamicIslandShowWeather,
+    on: { UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowWeather.rawValue) },
+    off: { UserDefaults.standard.set(false, forKey: DefaultsKey.islandShowWeather.rawValue) }
+), binding: {})
+UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowWeather.rawValue)
+Check.that(DynamicIslandService.slotEnabled(.islandShowWeather, defaultIfUnset: false) == false,
+           "天气槽未设置时应默认关")
+runtime.toggle(.dynamicIslandShowWeather)
+Check.that(UserDefaults.standard.bool(forKey: DefaultsKey.islandShowWeather.rawValue),
+           "天气槽 toggle ON 应写入 true")
+runtime.toggle(.dynamicIslandShowWeather)
+Check.that(!UserDefaults.standard.bool(forKey: DefaultsKey.islandShowWeather.rawValue),
+           "天气槽 toggle OFF 应写入 false")
+runtime.unregister(.dynamicIslandShowWeather)
+UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowWeather.rawValue)
+
 cleanFeaturePrefs()
 Check.finish()
