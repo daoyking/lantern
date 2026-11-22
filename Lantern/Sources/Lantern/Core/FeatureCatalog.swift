@@ -376,6 +376,9 @@ public final class FeatureCatalog {
             implementation: .native,
             isAction: true
         )
+        // File shelf + download watch: clipboard-tab file domain.
+        map[.fileShelf] = FeatureMetadata(displayPriority: 2, implementation: .native)
+        map[.downloadMonitor] = FeatureMetadata(displayPriority: 3, implementation: .native)
         // Quick launch: preset one-tap app launchers.
         map[.launchSafari] = FeatureMetadata(displayPriority: 12, implementation: .native, isAction: true)
         map[.launchTerminal] = FeatureMetadata(displayPriority: 13, implementation: .native, isAction: true)

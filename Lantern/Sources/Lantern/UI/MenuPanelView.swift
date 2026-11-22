@@ -599,3 +599,162 @@ struct PerAppAudioRow: View {
         }
     }
 }
+
+
+// MARK: - File Shelf Section (drag-and-drop, common checklist #3)
+
+struct FileShelfSection: View {
+    @ObservedObject var service: FileShelfService
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(L("shelf.title", "File Shelf"))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(PanelSurface.secondary)
+                Spacer()
+                if !service.items.isEmpty {
+                    Button {
+                        service.clear()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 10))
+                            .foregroundStyle(PanelSurface.tertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(L("ui.clear", "Clear"))
+                }
+            }
+            if service.items.isEmpty {
+                Text(L("shelf.empty", "Drop files here"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(PanelSurface.tertiary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(PanelSurface.cardBackground)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                            .foregroundStyle(PanelSurface.tertiary)
+                    )
+            } else {
+                ForEach(service.items) { item in
+                    ShelfRow(service: service, item: item)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(PanelSurface.cardBackground)
+        .cornerRadius(8)
+        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+            var handled = false
+            for provider in providers {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url else { return }
+                    DispatchQueue.main.async { service.add(url: url) }
+                }
+                handled = true
+            }
+            return handled
+        }
+    }
+}
+
+struct ShelfRow: View {
+    @ObservedObject var service: FileShelfService
+    let item: ShelfItem
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc")
+                .font(.system(size: 11))
+                .foregroundStyle(PanelSurface.accent)
+            Text(item.name)
+                .font(.system(size: 11))
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundStyle(PanelSurface.primary)
+            Spacer()
+            Button {
+                service.reveal(item.id)
+            } label: {
+                Image(systemName: "folder")
+                    .font(.system(size: 10))
+                    .foregroundStyle(PanelSurface.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(L("shelf.reveal", "Reveal in Finder"))
+            Button {
+                service.remove(item.id)
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9))
+                    .foregroundStyle(PanelSurface.tertiary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { service.open(item.id) }
+    }
+}
+
+// MARK: - Downloads Section (common checklist #7)
+
+struct DownloadsSection: View {
+    @ObservedObject var service: DownloadMonitorService
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("downloads.title", "Recent Downloads"))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(PanelSurface.secondary)
+            if service.items.isEmpty {
+                Text(L("downloads.empty", "No downloads in 24h"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(PanelSurface.tertiary)
+            } else {
+                ForEach(service.items) { item in
+                    DownloadRow(service: service, item: item)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(PanelSurface.cardBackground)
+        .cornerRadius(8)
+    }
+}
+
+struct DownloadRow: View {
+    @ObservedObject var service: DownloadMonitorService
+    let item: DownloadItem
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: item.isPartial ? "arrow.down.circle" : "doc.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(item.isPartial ? Color.orange : PanelSurface.accent)
+            Text(item.name)
+                .font(.system(size: 11))
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundStyle(PanelSurface.primary)
+            Spacer()
+            if item.isPartial {
+                Text(L("downloads.partial", "downloading"))
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color.orange)
+            } else {
+                Text(DownloadMonitorService.formatSize(item.sizeBytes))
+                    .font(.system(size: 9))
+                    .foregroundStyle(PanelSurface.tertiary)
+            }
+        }
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
+        .onTapGesture { service.reveal(item) }
+    }
+}

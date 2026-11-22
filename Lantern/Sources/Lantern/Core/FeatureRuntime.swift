@@ -128,6 +128,11 @@ public final class FeatureRuntime: ObservableObject {
         toggle(feature)
     }
 
+    /// Convenience read for UI sections gated by a state feature.
+    public func isActive(_ feature: AppFeature) -> Bool {
+        activeFeatures.contains(feature)
+    }
+
     public func performAction(_ feature: AppFeature) {
         guard gate(feature) else { return }
         bindings[feature]?()

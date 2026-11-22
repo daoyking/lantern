@@ -291,3 +291,13 @@
 "feature.launchCalendar.desc" = "启动日历应用";
 "feature.launchMail.name" = "打开邮件";
 "feature.launchMail.desc" = "启动邮件应用";
+"feature.fileShelf.name" = "文件架";
+"feature.fileShelf.desc" = "把文件拖进面板，随时快速打开发送";
+"feature.downloadMonitor.name" = "下载监测";
+"feature.downloadMonitor.desc" = "列出最近下载与进行中的下载文件";
+"shelf.title" = "文件架";
+"shelf.empty" = "把文件拖到这里";
+"shelf.reveal" = "在 Finder 中显示";
+"downloads.title" = "最近下载";
+"downloads.empty" = "24 小时内没有下载";
+"downloads.partial" = "下载中";

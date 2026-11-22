@@ -354,6 +354,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Focus session — toggle runs a 25-minute block on the island.
         runtime.register(.focusMode, service: FocusService.shared, binding: {})
 
+        // File shelf — toggle shows the drag-and-drop shelf section.
+        runtime.register(.fileShelf, service: FileShelfService.shared, binding: {})
+
+        // Download watch — toggle polls ~/Downloads every 2 seconds.
+        runtime.register(.downloadMonitor, service: DownloadMonitorService.shared, binding: {})
+
         // Quick launch — six preset app launch actions share one service.
         runtime.register(.launchSafari, service: QuickLaunchService.shared) {
             QuickLaunchService.launch(.launchSafari)

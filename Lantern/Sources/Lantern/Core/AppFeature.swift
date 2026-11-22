@@ -22,6 +22,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case cursorSize = "cursorSize"
 
     // ── Clipboard ────────────────────────────────────────────────────
+    case fileShelf = "fileShelf"
+    case downloadMonitor = "downloadMonitor"
     case clipboardHistory = "clipboardHistory"
     case pasteAsPlainText = "pasteAsPlainText"
     case syncClipboardAcrossDevices = "syncClipboardAcrossDevices"
@@ -95,6 +97,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .invertScroll, .mouseSensitivity, .keyboardRepeatRate,
              .doubleClickSpeed, .cursorSize:
             return .mouseKeyboard
+        case .fileShelf, .downloadMonitor:
+            return .clipboard
         case .clipboardHistory, .pasteAsPlainText, .syncClipboardAcrossDevices:
             return .clipboard
         case .launchSafari, .launchTerminal, .launchNotes,
@@ -139,6 +143,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .keyboardRepeatRate: return localized("name", "Key Repeat Rate")
         case .doubleClickSpeed: return localized("name", "Double-Click Speed")
         case .cursorSize: return localized("name", "Cursor Size")
+        case .fileShelf: return localized("name", "File Shelf")
+        case .downloadMonitor: return localized("name", "Download Watch")
         case .clipboardHistory: return localized("name", "Clipboard History")
         case .pasteAsPlainText: return localized("name", "Paste as Plain Text")
         case .syncClipboardAcrossDevices: return localized("name", "Sync Clipboard")
@@ -204,6 +210,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .keyboardRepeatRate: return localized("desc", "Set key repeat rate (faster / default)")
         case .doubleClickSpeed: return localized("desc", "Open Mouse settings to adjust double-click speed")
         case .cursorSize: return localized("desc", "Open Display settings to adjust cursor size")
+        case .fileShelf: return localized("desc", "Drag files onto the panel for quick reveal and open")
+        case .downloadMonitor: return localized("desc", "List recent and in-progress downloads from ~/Downloads")
         case .clipboardHistory: return localized("desc", "Maintain clipboard history across sessions")
         case .pasteAsPlainText: return localized("desc", "Always paste content as unformatted text")
         case .syncClipboardAcrossDevices: return localized("desc", "Sync clipboard text across devices via iCloud")
