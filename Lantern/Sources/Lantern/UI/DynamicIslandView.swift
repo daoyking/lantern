@@ -17,18 +17,22 @@ struct DynamicIslandFace: View {
     @ObservedObject var music: MusicControllerService
     // Calendar next-event slot: observed so a fresh reading repaints it.
     @ObservedObject var calendar: CalendarService
+    // Quick timer: observed so the countdown repaints on the 1s metric tick.
+    @ObservedObject var timer: QuickTimerService
     @AppStorage(DefaultsKey.islandShowTime.rawValue) private var showTime = true
     @AppStorage(DefaultsKey.islandShowDate.rawValue) private var showDate = false
     @AppStorage(DefaultsKey.islandShowWeather.rawValue) private var showWeather = false
     @AppStorage(DefaultsKey.islandShowMusic.rawValue) private var showMusic = false
     @AppStorage(DefaultsKey.islandShowNextEvent.rawValue) private var showNextEvent = false
+    // Timer slot follows the quickTimer feature toggle, not a dedicated key.
+    @AppStorage(DefaultsKey.featureEnabledKey("quickTimer")) private var showTimer = false
     @AppStorage(DefaultsKey.islandShowVolume.rawValue) private var showVolume = false
     @AppStorage(DefaultsKey.islandShowCPU.rawValue) private var showCPU = true
     @AppStorage(DefaultsKey.islandShowMemory.rawValue) private var showMemory = true
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, weather, music, nextEvent, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case time, date, weather, music, nextEvent, timer, volume, cpu, memory, battery, network }
 
     init(service: DynamicIslandService) {
         self.service = service
@@ -37,6 +41,7 @@ struct DynamicIslandFace: View {
         _music = ObservedObject(wrappedValue: MusicControllerService.shared
             ?? MusicControllerService(feature: .musicPlayPause))
         _calendar = ObservedObject(wrappedValue: CalendarService.shared)
+        _timer = ObservedObject(wrappedValue: QuickTimerService.shared)
     }
 
     /// Fixed priority order — enabled slots surface left to right.
@@ -47,6 +52,7 @@ struct DynamicIslandFace: View {
         if showWeather, service.weatherTempC != nil { slots.append(.weather) }
         if showMusic, music.trackTitle != nil { slots.append(.music) }
         if showNextEvent, calendar.nextEvent != nil { slots.append(.nextEvent) }
+        if showTimer, timer.endAt != nil { slots.append(.timer) }
         if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
         if showCPU { slots.append(.cpu) }
         if showMemory { slots.append(.memory) }
@@ -169,6 +175,17 @@ struct DynamicIslandFace: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .frame(maxWidth: 96)
+                }
+            }
+        case .timer:
+            if timer.endAt != nil {
+                VStack(spacing: 2) {
+                    Text(timer.caption)
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.white)
+                    Text(L("island.timer", "Timer"))
+                        .font(.system(size: 8))
+                        .foregroundColor(.white.opacity(0.55))
                 }
             }
         case .volume:

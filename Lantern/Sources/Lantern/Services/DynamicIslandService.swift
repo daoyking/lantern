@@ -74,6 +74,9 @@ public final class DynamicIslandService: BaseFeatureService {
         if Self.slotEnabled(.islandShowMemory, defaultIfUnset: true) { count += 1 }
         if Self.slotEnabled(.islandShowBattery, defaultIfUnset: true), batteryPercent >= 0 { count += 1 }
         if calendarHasEvent { count += 1 }
+        // Timer slot follows the quickTimer feature toggle + an active countdown.
+        if UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey("quickTimer")),
+           QuickTimerService.shared.endAt != nil { count += 1 }
         if Self.slotEnabled(.islandShowNetwork, defaultIfUnset: true) { count += 1 }
         return count
     }

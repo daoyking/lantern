@@ -262,3 +262,14 @@
 "eyebreak.title" = "护眼休息";
 "eyebreak.hint" = "看看 6 米外的远处";
 "eyebreak.skip" = "跳过";
+"feature.quickTimer.name" = "快速计时器";
+"feature.quickTimer.desc" = "启用快速计时；倒计时显示在悬浮岛";
+"feature.timerStart5.name" = "计时 5 分钟";
+"feature.timerStart5.desc" = "开始 5 分钟倒计时（再点一次取消）";
+"feature.timerStart10.name" = "计时 10 分钟";
+"feature.timerStart10.desc" = "开始 10 分钟倒计时（再点一次取消）";
+"feature.timerStart25.name" = "计时 25 分钟";
+"feature.timerStart25.desc" = "开始 25 分钟倒计时（再点一次取消）";
+"island.timer" = "计时";
+"timerDone.title" = "⏰ 时间到";
+"timerDone.hint" = "%d 分钟计时结束";

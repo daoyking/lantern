@@ -609,5 +609,57 @@ do {
     UserDefaults.standard.removeObject(forKey: DefaultsKey.featureEnabledKey("eyeBreak"))
 }
 
+// ▶27 快速计时器：时长启动/同键取消/换键重开、mm:ss 题注、特征接线
+do {
+    print("▶27 快速计时器")
+    let t = QuickTimerService(feature: .quickTimer)
+    // Start 5 → running with endAt ≈ now+300
+    t.start(minutes: 5)
+    Check.that(t.durationMinutes == 5, "启动 5 分钟后 durationMinutes 应为 5")
+    Check.that(t.endAt != nil && abs(t.endAt!.timeIntervalSinceNow - 300) < 2,
+               "endAt 应约在 300 秒后")
+    Check.that(t.remainingSeconds > 295 && t.remainingSeconds <= 300,
+               "剩余秒数应接近 300")
+    Check.that(t.caption.hasPrefix("04:") || t.caption.hasPrefix("05:"),
+               "mm:ss 题注应接近 05:00: \(t.caption)")
+    // Tap same duration again → cancel
+    t.start(minutes: 5)
+    Check.that(t.endAt == nil && t.durationMinutes == nil, "同键再按应取消")
+    // Restart with a different duration → replaced
+    t.start(minutes: 10)
+    t.start(minutes: 25)
+    Check.that(t.durationMinutes == 25 && abs(t.endAt!.timeIntervalSinceNow - 1500) < 2,
+               "换时长应重开为 25 分钟")
+    t.cancel()
+    Check.that(t.endAt == nil, "cancel 应清空 endAt")
+    // Feature wiring: state toggle gates; three actions are action-type
+    Check.that(AppFeature.quickTimer.group == .tools &&
+               AppFeature.timerStart5.group == .tools &&
+               AppFeature.timerStart10.group == .tools &&
+               AppFeature.timerStart25.group == .tools,
+               "计时器特征应全部属于 tools 组")
+    Check.that(!FeatureCatalog.shared.metadata(for: .quickTimer).isAction,
+               "quickTimer 应为状态型")
+    Check.that(FeatureCatalog.shared.metadata(for: .timerStart5).isAction &&
+               FeatureCatalog.shared.metadata(for: .timerStart10).isAction &&
+               FeatureCatalog.shared.metadata(for: .timerStart25).isAction,
+               "三个时长按钮应为动作型")
+    if runtime.activeFeatures.contains(.quickTimer) { runtime.stop(.quickTimer) }
+    runtime.register(.quickTimer, service: QuickTimerService.shared, binding: {})
+    let key = DefaultsKey.featureEnabledKey("quickTimer")
+    UserDefaults.standard.removeObject(forKey: key)
+    runtime.toggle(.quickTimer)
+    Check.that(runtime.activeFeatures.contains(.quickTimer) &&
+               UserDefaults.standard.bool(forKey: key),
+               "quickTimer toggle ON 应激活并持久化")
+    runtime.toggle(.quickTimer)
+    Check.that(!runtime.activeFeatures.contains(.quickTimer), "quickTimer toggle OFF 应停用")
+    runtime.unregister(.quickTimer)
+    UserDefaults.standard.removeObject(forKey: key)
+    // The three action features exist in the catalog metadata map
+    Check.that(FeatureCatalog.shared.metadata(for: .timerStart25).displayPriority == 10,
+               "timerStart25 应有目录元数据")
+}
+
 cleanFeaturePrefs()
 Check.finish()

@@ -31,6 +31,9 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case inputDeviceSelect = "inputDeviceSelect"
     case audioToggle = "audioToggle"
     case notificationSound = "notificationSound"
+    case timerStart5 = "timerStart5"
+    case timerStart10 = "timerStart10"
+    case timerStart25 = "timerStart25"
     case musicPlayPause = "musicPlayPause"
     case musicNextTrack = "musicNextTrack"
     case musicPrevTrack = "musicPrevTrack"
@@ -58,6 +61,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case fileShredder = "fileShredder"
     case colorPicker = "colorPicker"
     case eyeBreak = "eyeBreak"
+    case quickTimer = "quickTimer"
 
     // ── Dynamic Island ───────────────────────────────────────────────
     case dynamicIslandEnabled = "dynamicIslandEnabled"
@@ -86,6 +90,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
             return .mouseKeyboard
         case .clipboardHistory, .pasteAsPlainText, .syncClipboardAcrossDevices:
             return .clipboard
+        case .timerStart5, .timerStart10, .timerStart25:
+            return .tools
         case .volumeMixer, .inputDeviceSelect, .audioToggle, .notificationSound,
              .windowMinimizeAll, .windowSwitchApp,
              .soundVolumeUp, .soundVolumeDown, .soundMuteToggle,
@@ -95,7 +101,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
              .networkMonitor, .batteryDisplay:
             return .energyDisplay
         case .keepAwake, .portControl, .processKiller,
-             .fileShredder, .colorPicker, .eyeBreak:
+             .fileShredder, .colorPicker, .eyeBreak, .quickTimer:
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
@@ -151,6 +157,10 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .fileShredder: return localized("name", "File Shredder")
         case .colorPicker: return localized("name", "Color Picker")
         case .eyeBreak: return localized("name", "Eye Break (20-20-20)")
+        case .quickTimer: return localized("name", "Quick Timer")
+        case .timerStart5: return localized("name", "Timer 5 min")
+        case .timerStart10: return localized("name", "Timer 10 min")
+        case .timerStart25: return localized("name", "Timer 25 min")
         case .dynamicIslandEnabled: return localized("name", "Dynamic Island")
         case .dynamicIslandShowCPU: return localized("name", "Island: CPU")
         case .dynamicIslandShowBattery: return localized("name", "Island: Battery")
@@ -199,6 +209,10 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .processKiller: return localized("desc", "Choose a running app and terminate it")
         case .fileShredder: return localized("desc", "Overwrite and delete files you select")
         case .eyeBreak: return localized("desc", "Every 20 minutes, dim the screen for a 20-second eye break")
+        case .quickTimer: return localized("desc", "Enable quick timers; the countdown shows on the island")
+        case .timerStart5: return localized("desc", "Start a 5-minute timer (tap again to cancel)")
+        case .timerStart10: return localized("desc", "Start a 10-minute timer (tap again to cancel)")
+        case .timerStart25: return localized("desc", "Start a 25-minute timer (tap again to cancel)")
         case .colorPicker: return localized("desc", "Pick an on-screen color and copy its hex")
         case .dynamicIslandEnabled: return localized("desc", "Floating island at the top of the screen with live CPU / memory / battery")
         case .dynamicIslandShowCPU: return localized("desc", "Show CPU stats in the island")

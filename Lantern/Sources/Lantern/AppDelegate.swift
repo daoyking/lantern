@@ -336,6 +336,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Eye break — 20-20-20 scheduled overlay; toggle starts the cycle.
         runtime.register(.eyeBreak, service: EyeBreakService.shared, binding: {})
 
+        // Quick timer — state toggle gates the service; the three duration
+        // buttons share one service instance and toggle cancel semantics.
+        runtime.register(.quickTimer, service: QuickTimerService.shared, binding: {})
+        runtime.register(.timerStart5, service: QuickTimerService.shared) {
+            QuickTimerService.shared.start(minutes: 5)
+        }
+        runtime.register(.timerStart10, service: QuickTimerService.shared) {
+            QuickTimerService.shared.start(minutes: 10)
+        }
+        runtime.register(.timerStart25, service: QuickTimerService.shared) {
+            QuickTimerService.shared.start(minutes: 25)
+        }
+
         // Process killer — real app list via a menu, terminate on selection.
         runtime.register(.processKiller, service: ProcessKillerService(feature: .processKiller)) {
             self.showProcessKillerMenu()

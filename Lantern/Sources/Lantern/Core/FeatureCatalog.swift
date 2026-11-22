@@ -355,6 +355,27 @@ public final class FeatureCatalog {
             displayPriority: 6,
             implementation: .native
         )
+        // Quick timer: the state toggle gates the service + island slot;
+        // the three duration buttons are plain actions bound in AppDelegate.
+        map[.quickTimer] = FeatureMetadata(
+            displayPriority: 7,
+            implementation: .native
+        )
+        map[.timerStart5] = FeatureMetadata(
+            displayPriority: 8,
+            implementation: .native,
+            isAction: true
+        )
+        map[.timerStart10] = FeatureMetadata(
+            displayPriority: 9,
+            implementation: .native,
+            isAction: true
+        )
+        map[.timerStart25] = FeatureMetadata(
+            displayPriority: 10,
+            implementation: .native,
+            isAction: true
+        )
 
         // ── Dynamic Island ─────────────────────────────────────────────
         // Real floating panel + live SystemMetrics telemetry — the honest
