@@ -349,6 +349,12 @@ public final class FeatureCatalog {
             implementation: .native,
             isAction: true
         )
+        // Eye break: a scheduled overlay, not an action — toggle starts
+        // and stops the 20-minute cycle.
+        map[.eyeBreak] = FeatureMetadata(
+            displayPriority: 6,
+            implementation: .native
+        )
 
         // ── Dynamic Island ─────────────────────────────────────────────
         // Real floating panel + live SystemMetrics telemetry — the honest

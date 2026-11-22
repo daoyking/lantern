@@ -257,3 +257,8 @@
 "feature.dynamicIslandShowNextEvent.name" = "灵动岛：下一日程";
 "feature.dynamicIslandShowNextEvent.desc" = "在悬浮岛显示下一个日历日程";
 "island.nextEvent" = "日程";
+"feature.eyeBreak.name" = "护眼休息（20-20-20）";
+"feature.eyeBreak.desc" = "每 20 分钟提醒休息 20 秒，远眺放松眼睛";
+"eyebreak.title" = "护眼休息";
+"eyebreak.hint" = "看看 6 米外的远处";
+"eyebreak.skip" = "跳过";

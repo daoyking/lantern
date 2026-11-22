@@ -333,6 +333,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // Eye break — 20-20-20 scheduled overlay; toggle starts the cycle.
+        runtime.register(.eyeBreak, service: EyeBreakService.shared, binding: {})
+
         // Process killer — real app list via a menu, terminate on selection.
         runtime.register(.processKiller, service: ProcessKillerService(feature: .processKiller)) {
             self.showProcessKillerMenu()

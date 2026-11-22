@@ -583,5 +583,31 @@ do {
     UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowNextEvent.rawValue)
 }
 
+// ▶26 护眼 20-20-20：间隔/时长常量、状态型特征、toggle 持久化
+do {
+    print("▶26 护眼（20-20-20）")
+    Check.that(EyeBreakService.breakInterval == 20 * 60, "休息间隔应为 20 分钟")
+    Check.that(EyeBreakService.breakDuration == 20, "遮罩时长应为 20 秒")
+    Check.that(AppFeature.eyeBreak.group == .tools, "护眼应属于 tools 组")
+    Check.that(!FeatureCatalog.shared.metadata(for: .eyeBreak).isAction,
+               "护眼应为状态型（周期开关而非动作）")
+    // Toggle persists; the service never shows UI in tests (no start()).
+    if runtime.activeFeatures.contains(.eyeBreak) { runtime.stop(.eyeBreak) }
+    runtime.register(.eyeBreak, service: EyeBreakService.shared, binding: {})
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.featureEnabledKey("eyeBreak"))
+    Check.that(!runtime.activeFeatures.contains(.eyeBreak), "注册后默认未激活")
+    runtime.toggle(.eyeBreak)
+    Check.that(runtime.activeFeatures.contains(.eyeBreak), "toggle ON 应激活护眼")
+    Check.that(UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey("eyeBreak")),
+               "toggle ON 应持久化")
+    // start() schedules a timer; stop() must tear it down and not reschedule.
+    runtime.stop(.eyeBreak)
+    Check.that(!runtime.activeFeatures.contains(.eyeBreak), "toggle OFF 应停用护眼")
+    Check.that(!UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey("eyeBreak")),
+               "toggle OFF 应清除持久化")
+    runtime.unregister(.eyeBreak)
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.featureEnabledKey("eyeBreak"))
+}
+
 cleanFeaturePrefs()
 Check.finish()

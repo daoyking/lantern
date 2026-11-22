@@ -85,6 +85,8 @@ build() {
         Sources/Lantern/Services/IslandWeatherService.swift
         Sources/Lantern/Services/MusicControllerService.swift \
         Sources/Lantern/Services/CalendarService.swift
+        Sources/Lantern/Services/EyeBreakService.swift
+    Sources/Lantern/UI/EyeBreakOverlay.swift
         Sources/Lantern/Services/EnergyMonitorService.swift
         Sources/Lantern/Services/ScrollInversionService.swift
         Sources/Lantern/Services/KeepAwakeService.swift

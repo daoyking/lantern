@@ -57,6 +57,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case processKiller = "processKiller"
     case fileShredder = "fileShredder"
     case colorPicker = "colorPicker"
+    case eyeBreak = "eyeBreak"
 
     // ── Dynamic Island ───────────────────────────────────────────────
     case dynamicIslandEnabled = "dynamicIslandEnabled"
@@ -94,7 +95,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
              .networkMonitor, .batteryDisplay:
             return .energyDisplay
         case .keepAwake, .portControl, .processKiller,
-             .fileShredder, .colorPicker:
+             .fileShredder, .colorPicker, .eyeBreak:
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
@@ -149,6 +150,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .processKiller: return localized("name", "Process Killer")
         case .fileShredder: return localized("name", "File Shredder")
         case .colorPicker: return localized("name", "Color Picker")
+        case .eyeBreak: return localized("name", "Eye Break (20-20-20)")
         case .dynamicIslandEnabled: return localized("name", "Dynamic Island")
         case .dynamicIslandShowCPU: return localized("name", "Island: CPU")
         case .dynamicIslandShowBattery: return localized("name", "Island: Battery")
@@ -196,6 +198,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .portControl: return localized("desc", "Open Network settings (port control needs root)")
         case .processKiller: return localized("desc", "Choose a running app and terminate it")
         case .fileShredder: return localized("desc", "Overwrite and delete files you select")
+        case .eyeBreak: return localized("desc", "Every 20 minutes, dim the screen for a 20-second eye break")
         case .colorPicker: return localized("desc", "Pick an on-screen color and copy its hex")
         case .dynamicIslandEnabled: return localized("desc", "Floating island at the top of the screen with live CPU / memory / battery")
         case .dynamicIslandShowCPU: return localized("desc", "Show CPU stats in the island")
