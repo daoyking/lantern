@@ -56,6 +56,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case soundMuteToggle = "soundMuteToggle"
 
     // ── Energy Display ───────────────────────────────────────────────
+    case bluetoothRadar = "bluetoothRadar"
     case cpuMonitor = "cpuMonitor"
     case gpuMonitor = "gpuMonitor"
     case memoryMonitor = "memoryMonitor"
@@ -111,6 +112,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
              .soundVolumeUp, .soundVolumeDown, .soundMuteToggle,
              .musicPlayPause, .musicNextTrack, .musicPrevTrack:
             return .sound
+        case .bluetoothRadar:
+            return .energyDisplay
         case .cpuMonitor, .gpuMonitor, .memoryMonitor,
              .networkMonitor, .batteryDisplay:
             return .energyDisplay
@@ -162,6 +165,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .musicPrevTrack: return localized("name", "Previous Track")
         case .dynamicIslandShowMusic: return localized("name", "Island: Music")
         case .dynamicIslandShowNextEvent: return localized("name", "Island: Next Event")
+        case .bluetoothRadar: return localized("name", "Bluetooth Radar")
         case .cpuMonitor: return localized("name", "CPU Monitor")
         case .gpuMonitor: return localized("name", "GPU Monitor")
         case .memoryMonitor: return localized("name", "Memory Monitor")
@@ -224,6 +228,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .soundVolumeUp: return localized("desc", "Increase system volume by 5%")
         case .soundVolumeDown: return localized("desc", "Decrease system volume by 5%")
         case .soundMuteToggle: return localized("desc", "Toggle system mute state")
+        case .bluetoothRadar: return localized("desc", "Scan nearby Bluetooth devices with signal strength")
         case .cpuMonitor: return localized("desc", "Live CPU usage from Mach host statistics")
         case .gpuMonitor: return localized("desc", "GPU model via system_profiler (no public utilization API)")
         case .memoryMonitor: return localized("desc", "Live memory usage from VM statistics")

@@ -301,3 +301,9 @@
 "downloads.title" = "最近下载";
 "downloads.empty" = "24 小时内没有下载";
 "downloads.partial" = "下载中";
+"feature.bluetoothRadar.name" = "蓝牙雷达";
+"feature.bluetoothRadar.desc" = "扫描附近蓝牙设备并显示信号强度";
+"radar.title" = "蓝牙雷达";
+"radar.empty" = "扫描中，附近暂无设备";
+"radar.off" = "蓝牙未开启";
+"radar.rescan" = "重新扫描";

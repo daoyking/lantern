@@ -91,6 +91,7 @@ build() {
         Sources/Lantern/Services/QuickLaunchService.swift
         Sources/Lantern/Services/FileShelfService.swift
         Sources/Lantern/Services/DownloadMonitorService.swift
+        Sources/Lantern/Services/BluetoothRadarService.swift
         Sources/Lantern/UI/EyeBreakOverlay.swift
         Sources/Lantern/UI/TimerDoneCard.swift
     Sources/Lantern/UI/FocusDoneCard.swift

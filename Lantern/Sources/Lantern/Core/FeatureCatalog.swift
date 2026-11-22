@@ -376,6 +376,8 @@ public final class FeatureCatalog {
             implementation: .native,
             isAction: true
         )
+        // Bluetooth radar: CoreBluetooth scan of nearby advertising devices.
+        map[.bluetoothRadar] = FeatureMetadata(displayPriority: 5, implementation: .native)
         // File shelf + download watch: clipboard-tab file domain.
         map[.fileShelf] = FeatureMetadata(displayPriority: 2, implementation: .native)
         map[.downloadMonitor] = FeatureMetadata(displayPriority: 3, implementation: .native)

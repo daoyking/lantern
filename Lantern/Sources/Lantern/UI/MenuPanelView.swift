@@ -758,3 +758,61 @@ struct DownloadRow: View {
         .onTapGesture { service.reveal(item) }
     }
 }
+
+
+// MARK: - Bluetooth Radar Section (common checklist #16)
+
+struct BluetoothRadarSection: View {
+    @ObservedObject var service: BluetoothRadarService
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(L("radar.title", "Bluetooth Radar"))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(PanelSurface.secondary)
+                Spacer()
+                Button {
+                    service.rescan()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 10))
+                        .foregroundStyle(PanelSurface.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(L("radar.rescan", "Rescan"))
+            }
+            if service.radioOn == false {
+                Text(L("radar.off", "Bluetooth is off"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(PanelSurface.tertiary)
+            } else if service.entries.isEmpty {
+                Text(L("radar.empty", "Scanning, no devices nearby"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(PanelSurface.tertiary)
+            } else {
+                ForEach(service.entries) { entry in
+                    HStack(spacing: 8) {
+                        Image(systemName: "dot.radiowaves.left.and.right")
+                            .font(.system(size: 11))
+                            .foregroundStyle(PanelSurface.accent)
+                        Text(entry.name)
+                            .font(.system(size: 11))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .foregroundStyle(PanelSurface.primary)
+                        Spacer()
+                        Text("\(entry.rssi) dBm")
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundStyle(entry.rssi > -70 ? Color.green : PanelSurface.tertiary)
+                    }
+                    .padding(.vertical, 3)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(PanelSurface.cardBackground)
+        .cornerRadius(8)
+    }
+}

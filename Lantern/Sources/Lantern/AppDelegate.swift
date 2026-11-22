@@ -354,6 +354,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Focus session — toggle runs a 25-minute block on the island.
         runtime.register(.focusMode, service: FocusService.shared, binding: {})
 
+        // Bluetooth radar — toggle runs a CoreBluetooth nearby scan.
+        runtime.register(.bluetoothRadar, service: BluetoothRadarService.shared, binding: {})
+
         // File shelf — toggle shows the drag-and-drop shelf section.
         runtime.register(.fileShelf, service: FileShelfService.shared, binding: {})
 
