@@ -19,19 +19,29 @@ public final class DynamicIslandService: BaseFeatureService {
 
     // MARK: - Geometry
 
+    /// Height of the hardware-notch zone (safeAreaInsets.top on notched
+    /// Macs). The physical notch hides anything drawn in this band at the
+    /// screen's horizontal centre, so expanded content must stay below it.
+    static var notchHeight: CGFloat {
+        let h = NSScreen.main?.safeAreaInsets.top ?? 0
+        return h >= 24 ? h : 32
+    }
+
     /// Idle state mimics the hardware notch: 184pt wide, notch-height tall,
     /// flush with the top edge. On notched Macs the black slab blends into
     /// the real notch (nothing extra visible); on notch-less displays it
     /// reads as a small top-centre bar.
     private static var compactSize: CGSize {
-        let notchHeight = NSScreen.main?.safeAreaInsets.top ?? 0
-        return CGSize(width: 184, height: notchHeight >= 24 ? notchHeight : 32)
+        CGSize(width: 184, height: notchHeight)
     }
     private static let topInset: CGFloat = 0   // flush with the top edge
 
-    /// Expanded pill grows with the number of enabled slots so nothing clips.
+    /// Expanded pill grows with the number of enabled slots so nothing
+    /// clips, and is tall enough that its content band starts below the
+    /// hardware notch instead of behind it.
     private var expandedSize: CGSize {
-        CGSize(width: max(260, 130 + 46 * enabledSlotCount), height: 64)
+        CGSize(width: CGFloat(max(260, 130 + 46 * enabledSlotCount)),
+               height: Self.notchHeight + 48)
     }
 
     /// Slot flags default ON for the metrics the island always showed

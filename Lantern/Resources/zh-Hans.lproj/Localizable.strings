@@ -236,3 +236,12 @@
 "island.weather" = "天气";
 "feature.dynamicIslandShowWeather.name" = "灵动岛：天气";
 "feature.dynamicIslandShowWeather.desc" = "在悬浮岛显示当地天气（自动定位）";
+"wmo.clear" = "晴";
+"wmo.partly" = "多云";
+"wmo.overcast" = "阴";
+"wmo.fog" = "雾";
+"wmo.drizzle" = "毛毛雨";
+"wmo.rain" = "雨";
+"wmo.snow" = "雪";
+"wmo.showers" = "阵雨";
+"wmo.thunder" = "雷雨";

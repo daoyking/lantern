@@ -38,7 +38,7 @@ struct DynamicIslandFace: View {
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             Rectangle()
                 .fill(Color.black.opacity(0.92))
                 // The real notch casts no shadow — only the expanded state
@@ -55,7 +55,7 @@ struct DynamicIslandFace: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
     }
 
-    // MARK: - Expanded: every enabled slot with its value
+    // MARK: - Expanded: every enabled slot with its value, below the notch
 
     private var expandedContent: some View {
         HStack(spacing: 14) {
@@ -63,7 +63,9 @@ struct DynamicIslandFace: View {
                 expandedSlot(slot)
             }
         }
-        .padding(.horizontal, 16)
+        // The hardware notch hides the top band at the screen's horizontal
+        // centre — park the content just below it.
+        .padding(.top, DynamicIslandService.notchHeight + 6)
     }
 
     @ViewBuilder
@@ -74,7 +76,7 @@ struct DynamicIslandFace: View {
                 Text(Self.timeFormatter.string(from: service.now))
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundColor(.white)
-                Text(L("island.time", "Time"))
+                Text(Self.dateFormatter.string(from: service.now))
                     .font(.system(size: 8))
                     .foregroundColor(.white.opacity(0.55))
             }
@@ -89,18 +91,25 @@ struct DynamicIslandFace: View {
             }
         case .weather:
             if let temp = service.weatherTempC {
-                metric(icon: IslandWeatherService.symbol(for: service.weatherCode ?? 3),
+                let code = service.weatherCode ?? 3
+                let cond = IslandWeatherService.condition(for: code)
+                metric(icon: IslandWeatherService.symbol(for: code),
                        color: .cyan,
                        label: L("island.weather", "Weather"),
-                       value: String(format: "%.0f°", temp))
+                       value: "\(L(cond.key, cond.english)) \(Int(temp))°")
             }
         case .volume:
-            metric(icon: service.volumeMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
-                   color: service.volumeMuted ? .orange : .white,
-                   label: L("island.volume", "Volume"),
-                   value: service.volumeMuted
-                       ? L("island.muted", "Muted")
-                       : "\(Int(service.volumePercent))%")
+            VStack(spacing: 3) {
+                Image(systemName: volumeIcon)
+                    .font(.system(size: 11))
+                    .foregroundColor(service.volumeMuted ? .orange : .white)
+                volumeBar(level: service.volumeMuted
+                            ? 0
+                            : min(max(service.volumePercent / 100, 0), 1))
+                Text("\(Int(service.volumePercent))%")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.white)
+            }
         case .cpu:
             metric(icon: "cpu.fill", color: cpuColor,
                    label: L("island.cpu", "CPU"),
@@ -142,6 +151,28 @@ struct DynamicIslandFace: View {
         case ..<80: return .orange
         default: return .red
         }
+    }
+
+    /// Speaker icon tracks the live master-volume level (waves grow with it).
+    private var volumeIcon: String {
+        if service.volumeMuted || service.volumePercent < 1 { return "speaker.slash.fill" }
+        switch service.volumePercent {
+        case ..<34: return "speaker.wave.1.fill"
+        case ..<67: return "speaker.wave.2.fill"
+        default: return "speaker.wave.3.fill"
+        }
+    }
+
+    /// Thin horizontal gauge whose filled width tracks the volume level.
+    private func volumeBar(level: Double) -> some View {
+        RoundedRectangle(cornerRadius: 1.5)
+            .fill(Color.white.opacity(0.25))
+            .frame(width: 36, height: 3)
+            .overlay(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(service.volumeMuted ? Color.orange : Color.white)
+                    .frame(width: max(2, 36 * level), height: 3)
+            }
     }
 
     // Cached formatters — the face re-renders every second via service.now.

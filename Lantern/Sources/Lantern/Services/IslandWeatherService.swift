@@ -133,4 +133,23 @@ public final class IslandWeatherService: NSObject, ObservableObject, CLLocationM
         default: return "cloud.fill"
         }
     }
+
+    /// WMO code → condition the island shows in words (晴/多云/阴/雨…).
+    /// `key` is the localization key (zh-Hans table has the translations),
+    /// `english` is the fallback rendered by L() when no table entry exists.
+    static func condition(for code: Int) -> (key: String, english: String) {
+        switch code {
+        case 0: return ("wmo.clear", "Sunny")
+        case 1: return ("wmo.clear", "Mostly Sunny")
+        case 2: return ("wmo.partly", "Partly Cloudy")
+        case 3: return ("wmo.overcast", "Overcast")
+        case 45, 48: return ("wmo.fog", "Foggy")
+        case 51...57: return ("wmo.drizzle", "Drizzle")
+        case 61...67: return ("wmo.rain", "Rain")
+        case 71...77, 85, 86: return ("wmo.snow", "Snow")
+        case 80...82: return ("wmo.showers", "Showers")
+        case 95...99: return ("wmo.thunder", "Thunderstorm")
+        default: return ("wmo.overcast", "Overcast")
+        }
+    }
 }

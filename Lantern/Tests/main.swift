@@ -424,6 +424,12 @@ Check.that(IslandWeatherService.symbol(for: 63) == "cloud.rain.fill", "雨应映
 Check.that(IslandWeatherService.symbol(for: 73) == "cloud.snow.fill", "雪应映射 cloud.snow.fill")
 Check.that(IslandWeatherService.symbol(for: 95) == "cloud.bolt.rain.fill", "雷暴应映射 cloud.bolt.rain.fill")
 Check.that(IslandWeatherService.symbol(for: 999) == "cloud.fill", "未知码应兜底 cloud.fill")
+// WMO 码 → 条件词（本地化键 + 英文兜底）
+Check.that(IslandWeatherService.condition(for: 0).key == "wmo.clear", "0 应映射晴")
+Check.that(IslandWeatherService.condition(for: 2).key == "wmo.partly", "2 应映射多云")
+Check.that(IslandWeatherService.condition(for: 3).key == "wmo.overcast", "3 应映射阴")
+Check.that(IslandWeatherService.condition(for: 63).key == "wmo.rain", "63 应映射雨")
+Check.that(IslandWeatherService.condition(for: 95).key == "wmo.thunder", "95 应映射雷雨")
 // 槽位：组归属 + 状态型 + 开关持久化（默认关）
 Check.that(AppFeature.dynamicIslandShowWeather.group == .dynamicIsland, "天气开关应属于 dynamicIsland 组")
 Check.that(!FeatureCatalog.shared.metadata(for: .dynamicIslandShowWeather).isAction, "天气开关应为状态型")
