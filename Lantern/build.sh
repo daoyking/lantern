@@ -85,6 +85,7 @@ build() {
         Sources/Lantern/Services/EnergyMonitorService.swift
         Sources/Lantern/Services/ScrollInversionService.swift
         Sources/Lantern/Services/KeepAwakeService.swift
+        Sources/Lantern/Services/PerAppAudioService.swift
         Sources/Lantern/Services/SoundMixerService.swift
         Sources/Lantern/Services/SystemMetrics.swift
         Sources/Lantern/Services/SystemSettingsService.swift

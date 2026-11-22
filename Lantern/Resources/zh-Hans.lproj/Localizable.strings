@@ -152,7 +152,7 @@
 "feature.syncClipboardAcrossDevices.desc" = "通过 iCloud 在各设备间同步剪贴板文本";
 
 "feature.volumeMixer.name" = "音量混合器";
-"feature.volumeMixer.desc" = "打开声音设置（单应用音量无公开 API）";
+"feature.volumeMixer.desc" = "查看哪些应用正在发声，并可单独静音";
 "feature.inputDeviceSelect.name" = "输入设备";
 "feature.inputDeviceSelect.desc" = "切换到下一个 Core Audio 输入设备";
 "feature.audioToggle.name" = "音频开关";
@@ -211,3 +211,11 @@
 "island.memory" = "内存";
 "island.battery" = "电池";
 "island.network" = "网络";
+
+/* Per-app audio section */
+"perapp.title" = "各应用声音";
+"perapp.hint.off" = "打开音量混合器以查看哪些应用正在发声";
+"perapp.empty" = "当前没有应用在发声";
+"perapp.playing" = "正在发声";
+"perapp.mute" = "静音此应用";
+"perapp.unmute" = "取消静音";

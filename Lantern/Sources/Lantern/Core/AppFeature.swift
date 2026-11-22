@@ -152,7 +152,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .clipboardHistory: return localized("desc", "Maintain clipboard history across sessions")
         case .pasteAsPlainText: return localized("desc", "Always paste content as unformatted text")
         case .syncClipboardAcrossDevices: return localized("desc", "Sync clipboard text across devices via iCloud")
-        case .volumeMixer: return localized("desc", "Open Sound settings (per-app mixer has no public API)")
+        case .volumeMixer: return localized("desc", "See which apps play sound and mute them individually")
         case .inputDeviceSelect: return localized("desc", "Switch to the next Core Audio input device")
         case .audioToggle: return localized("desc", "Mute/unmute system audio via Core Audio")
         case .notificationSound: return localized("desc", "Open Sound settings for notification sounds")

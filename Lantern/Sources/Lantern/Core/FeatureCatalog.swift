@@ -265,7 +265,7 @@ public final class FeatureCatalog {
         map[.volumeMixer] = FeatureMetadata(
             installedByDefault: true,
             displayPriority: 1,
-            implementation: .stub  // per-app mixer has no public API; opens Sound pane
+            implementation: .native  // live per-app list + per-app mute via process taps
         )
         map[.inputDeviceSelect] = FeatureMetadata(
             displayPriority: 2, implementation: .native, isAction: true

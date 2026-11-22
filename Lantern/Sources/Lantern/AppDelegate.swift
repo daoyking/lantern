@@ -273,12 +273,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             on: { NSSound.beep(); SettingsPane.sound.open() },
             off: {}
         ), binding: {})
-        // Volume mixer — open Sound pane (per-app mixer has no public API).
-        runtime.register(.volumeMixer, service: PreferenceToggleService(
-            feature: .volumeMixer,
-            on: { SettingsPane.sound.open() },
-            off: {}
-        ), binding: {})
+        // Volume mixer — real per-app audio list + per-app mute via process
+        // taps (macOS 14.2+). Continuous per-app gain (aggregate + IOProc
+        // mixdown) stays deferred — see journal design note.
+        runtime.register(.volumeMixer,
+                         service: PerAppAudioService(feature: .volumeMixer),
+                         binding: {})
 
         // Tools: process killer / shredder / color picker / port control.
         runtime.register(.processKiller, service: ProcessKillerService(feature: .processKiller), binding: {})

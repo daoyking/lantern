@@ -139,6 +139,9 @@ struct MenuPanelView: View {
                         if group == .clipboard, let clipboard = ClipboardService.shared {
                             ClipboardHistorySection(service: clipboard)
                         }
+                        if group == .sound, let perApp = PerAppAudioService.shared {
+                            PerAppAudioSection(service: perApp)
+                        }
                         ForEach(features, id: \.self) { feature in
                             FeatureRow(feature: feature)
                         }
@@ -494,4 +497,105 @@ enum PanelSurface {
     static var cardBorder: Color { .white.opacity(0.05) }
     static var separator: Color { .white.opacity(0.1) }
     static var title: Color { .white }
+}
+
+// MARK: - Per-app audio (sound tab)
+
+/// Live per-app audio list: which apps emit sound, mute each individually.
+/// Passive enumeration costs nothing; muting creates/destroys one process tap.
+struct PerAppAudioSection: View {
+    @ObservedObject var service: PerAppAudioService
+    @StateObject private var runtime = FeatureRuntime.shared
+
+    private var isActive: Bool { runtime.activeFeatures.contains(.volumeMixer) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "speaker.wave.2")
+                    .font(.caption)
+                    .foregroundStyle(PanelSurface.accent)
+                Text(L("perapp.title", "Per-app audio"))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(PanelSurface.secondary)
+                Spacer()
+                Text("\(service.apps.count)")
+                    .font(.caption2)
+                    .foregroundStyle(PanelSurface.tertiary)
+            }
+
+            if !isActive {
+                Text(L("perapp.hint.off",
+                       "Turn on Volume Mixer to see which apps are playing sound"))
+                    .font(.caption)
+                    .foregroundStyle(PanelSurface.tertiary)
+                    .padding(.vertical, 2)
+            } else if service.apps.isEmpty {
+                Text(L("perapp.empty", "No app is playing audio right now"))
+                    .font(.caption)
+                    .foregroundStyle(PanelSurface.tertiary)
+                    .padding(.vertical, 2)
+            } else {
+                ForEach(service.apps) { app in
+                    PerAppAudioRow(app: app, service: service)
+                }
+            }
+        }
+        .padding(10)
+        .background(PanelSurface.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
+        )
+    }
+}
+
+struct PerAppAudioRow: View {
+    let app: AudioApp
+    @ObservedObject var service: PerAppAudioService
+
+    private var muted: Bool { service.isMuted(app.pid) }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Group {
+                if let running = NSRunningApplication(processIdentifier: app.pid) {
+                    Image(nsImage: running.icon ?? NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: "app.dashed")
+                        .font(.caption)
+                }
+            }
+            .frame(width: 16, height: 16)
+
+            Text(app.name)
+                .font(.caption)
+                .foregroundStyle(muted ? PanelSurface.tertiary : PanelSurface.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer()
+
+            if app.isRunningOutput && !muted {
+                Image(systemName: "waveform")
+                    .font(.caption2)
+                    .foregroundStyle(.green)
+                    .help(L("perapp.playing", "Playing audio"))
+            }
+
+            Button {
+                service.toggleMute(app)
+            } label: {
+                Image(systemName: muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.caption)
+                    .foregroundStyle(muted ? Color.orange : PanelSurface.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(muted ? L("perapp.unmute", "Unmute this app")
+                        : L("perapp.mute", "Mute this app"))
+        }
+    }
 }
