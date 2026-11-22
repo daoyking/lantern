@@ -76,6 +76,11 @@ struct DynamicIslandFace: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { service.toggleExpanded() }
+        .contextMenu {
+            Button(L("island.openPanel", "Open Lantern Panel")) {
+                NotificationCenter.default.post(name: .lanternTogglePanel, object: nil)
+            }
+        }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
     }
 

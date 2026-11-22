@@ -97,6 +97,8 @@ public enum AppLanguage: String, CaseIterable, Identifiable {
 extension Notification.Name {
     /// 语言切换后让 SwiftUI 视图整体刷新（菜单是启动时构建的，需重启更新）。
     public static let lanternLanguageChanged = Notification.Name("lanternLanguageChanged")
+    /// Island right-click → AppDelegate toggles the main panel.
+    public static let lanternTogglePanel = Notification.Name("lanternTogglePanel")
 }
 
 /// 统一查表入口：命中 .strings 就用译文，否则用代码里的英文兜底。

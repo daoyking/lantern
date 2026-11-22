@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Notification observer token for the in-panel close button / Esc.
     private var closeObserver: Any?
+    private var panelToggleObserver: Any?
 
     /// True only when the panel window actually exists and is on screen.
     /// Never derive this from persisted UserDefaults — a stale "true" from a
@@ -57,6 +58,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] _ in
             self?.hidePanel()
+        }
+
+        // Island right-click → open/toggle the panel (discoverability fallback
+        // for MacBooks whose notch crowds the status item out of the menu bar).
+        panelToggleObserver = NotificationCenter.default.addObserver(
+            forName: .lanternTogglePanel,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.statusItemController.togglePanel()
         }
 
         // 注册服务实例到 FeatureRuntime
