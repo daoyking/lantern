@@ -93,6 +93,22 @@ final class LanternTests: XCTestCase {
         }
     }
 
+    /// The island gained customizable slots — each must be a stateful toggle
+    /// in the dynamicIsland group so the panel can switch it.
+    func testIslandSlotFeaturesAreStatefulToggles() {
+        let slots: [AppFeature] = [
+            .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
+            .dynamicIslandShowMemory, .dynamicIslandShowNetwork,
+        ]
+        for slot in slots {
+            XCTAssertEqual(slot.group, .dynamicIsland,
+                           "\(slot.rawValue) must live in the island group")
+            XCTAssertFalse(FeatureCatalog.shared.metadata(for: slot).isAction,
+                           "\(slot.rawValue) must be a persistent toggle")
+            XCTAssertTrue(FeatureCatalog.shared.metadata(for: slot).installedByDefault)
+        }
+    }
+
     /// The island hid the battery because macOS 27 renamed the IOKit.ps keys
     /// and reshaped the blob. The parser must accept BOTH spellings.
     func testBatteryParserUnderstandsBothMacOSShapes() {

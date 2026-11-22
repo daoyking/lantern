@@ -6,6 +6,7 @@
 
 import Foundation
 import Darwin
+import CoreAudio
 import IOKit
 import IOKit.ps
 
@@ -21,6 +22,9 @@ public struct MetricSnapshot {
     public let networkUpKBps: Double     // KB/s since previous sample
     public let batteryPercent: Double    // 0–100, or -1 on desktops / no battery
     public let batteryCharging: Bool
+    /// Master output volume 0–100, or -1 if the default output has no scalar.
+    public let volumePercent: Double
+    public let volumeMuted: Bool
 
     public init(
         cpuUsage: Double,
@@ -30,7 +34,9 @@ public struct MetricSnapshot {
         networkDownKBps: Double,
         networkUpKBps: Double,
         batteryPercent: Double,
-        batteryCharging: Bool
+        batteryCharging: Bool,
+        volumePercent: Double = -1,
+        volumeMuted: Bool = false
     ) {
         self.cpuUsage = cpuUsage
         self.memoryPressure = memoryPressure
@@ -40,6 +46,8 @@ public struct MetricSnapshot {
         self.networkUpKBps = networkUpKBps
         self.batteryPercent = batteryPercent
         self.batteryCharging = batteryCharging
+        self.volumePercent = volumePercent
+        self.volumeMuted = volumeMuted
     }
 }
 
@@ -122,6 +130,7 @@ public final class SystemMetrics {
         let mem = readMemory()
         let net = readNetwork(interval: interval)
         let bat = readBattery()
+        let vol = readVolume()
 
         return MetricSnapshot(
             cpuUsage: cpu,
@@ -131,7 +140,9 @@ public final class SystemMetrics {
             networkDownKBps: net.down,
             networkUpKBps: net.up,
             batteryPercent: bat.percent,
-            batteryCharging: bat.charging
+            batteryCharging: bat.charging,
+            volumePercent: vol.percent,
+            volumeMuted: vol.muted
         )
     }
 
@@ -236,5 +247,40 @@ public final class SystemMetrics {
             return result
         }
         return (-1, false)
+    }
+
+    // MARK: Volume — default output device (CoreAudio)
+
+    /// Master volume + mute of the current default output device.
+    /// (-1, false) when the device exposes no master volume scalar.
+    private func readVolume() -> (percent: Double, muted: Bool) {
+        var device = AudioObjectID(0)
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &device
+        )
+        guard status == noErr, device != 0 else { return (-1, false) }
+
+        var volume = Float32(0)
+        size = UInt32(MemoryLayout<Float32>.size)
+        addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyVolumeScalar,
+            mScope: kAudioObjectPropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        status = AudioObjectGetPropertyData(device, &addr, 0, nil, &size, &volume)
+        guard status == noErr else { return (-1, false) }
+
+        var mute = UInt32(0)
+        size = UInt32(MemoryLayout<UInt32>.size)
+        addr.mSelector = kAudioDevicePropertyMute
+        let muteStatus = AudioObjectGetPropertyData(device, &addr, 0, nil, &size, &mute)
+        let muted = muteStatus == noErr && mute != 0
+        return (Double(volume) * 100.0, muted)
     }
 }

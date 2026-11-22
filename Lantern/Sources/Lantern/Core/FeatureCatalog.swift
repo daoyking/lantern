@@ -365,6 +365,31 @@ public final class FeatureCatalog {
             displayPriority: 3,
             implementation: .native
         )
+        map[.dynamicIslandShowVolume] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 4,
+            implementation: .native
+        )
+        map[.dynamicIslandShowTime] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 5,
+            implementation: .native
+        )
+        map[.dynamicIslandShowDate] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 6,
+            implementation: .native
+        )
+        map[.dynamicIslandShowMemory] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 7,
+            implementation: .native
+        )
+        map[.dynamicIslandShowNetwork] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 8,
+            implementation: .native
+        )
 
         return map
     }

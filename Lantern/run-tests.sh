@@ -25,7 +25,10 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Core/WindowSnapGeometry.swift \
     Sources/Lantern/Services/SystemMetrics.swift \
     Sources/Lantern/Services/EnergyMonitorService.swift \
+    Sources/Lantern/Services/SystemSettingsService.swift \
     Sources/Lantern/Services/ScrollInversionService.swift \
+    Sources/Lantern/Services/DynamicIslandService.swift \
+    Sources/Lantern/UI/DynamicIslandView.swift \
     Tests/main.swift
 
 echo "[TEST] Running…"

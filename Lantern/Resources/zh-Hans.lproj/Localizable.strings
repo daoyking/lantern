@@ -219,3 +219,17 @@
 "perapp.playing" = "正在发声";
 "perapp.mute" = "静音此应用";
 "perapp.unmute" = "取消静音";
+"feature.dynamicIslandShowVolume.name" = "灵动岛：音量";
+"feature.dynamicIslandShowVolume.desc" = "在悬浮岛显示系统音量（静音时变橙）";
+"feature.dynamicIslandShowTime.name" = "灵动岛：时间";
+"feature.dynamicIslandShowTime.desc" = "在悬浮岛显示当前时间";
+"feature.dynamicIslandShowDate.name" = "灵动岛：日期";
+"feature.dynamicIslandShowDate.desc" = "在悬浮岛显示日期与星期";
+"feature.dynamicIslandShowMemory.name" = "灵动岛：内存";
+"feature.dynamicIslandShowMemory.desc" = "在悬浮岛显示内存压力";
+"feature.dynamicIslandShowNetwork.name" = "灵动岛：网络";
+"feature.dynamicIslandShowNetwork.desc" = "在悬浮岛显示下载速率";
+"island.volume" = "音量";
+"island.time" = "时间";
+"island.date" = "日期";
+"island.muted" = "静音";

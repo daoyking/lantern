@@ -349,6 +349,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             on: { UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowBattery.rawValue) },
             off: { UserDefaults.standard.set(false, forKey: DefaultsKey.islandShowBattery.rawValue) }
         ), binding: {})
+        for (feature, key, onByDefault) in [
+            (AppFeature.dynamicIslandShowVolume, DefaultsKey.islandShowVolume, false),
+            (AppFeature.dynamicIslandShowTime, DefaultsKey.islandShowTime, true),
+            (AppFeature.dynamicIslandShowDate, DefaultsKey.islandShowDate, false),
+            (AppFeature.dynamicIslandShowMemory, DefaultsKey.islandShowMemory, true),
+            (AppFeature.dynamicIslandShowNetwork, DefaultsKey.islandShowNetwork, true),
+        ] {
+            runtime.register(feature, service: PreferenceToggleService(
+                feature: feature,
+                on: { UserDefaults.standard.set(true, forKey: key.rawValue) },
+                off: { UserDefaults.standard.set(false, forKey: key.rawValue) }
+            ), binding: {})
+        }
     }
     
     // MARK: - Tool actions

@@ -354,5 +354,55 @@ Check.that(MetricMath.battery(from: ["CurrentCapacity": 50, "MaxCapacity": 0]) =
 Check.that(MetricMath.battery(from: ["Is Present": false, "Current Capacity": 80, "Max Capacity": 100])?.percent == 80.0,
            "Is Present 由调用方过滤，解析只看容量")
 
+// ▶22 岛槽位：新增时间/日期/音量/内存/网络开关，默认语义 + 持久化 + 组归属
+print("▶ 22. 岛槽位可自定义（时间/日期/音量/内存/网络开关持久化）")
+let slotFeatures: [AppFeature] = [
+    .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
+    .dynamicIslandShowMemory, .dynamicIslandShowNetwork,
+]
+let slotKeys: [DefaultsKey] = [
+    .islandShowVolume, .islandShowTime, .islandShowDate, .islandShowMemory, .islandShowNetwork,
+]
+for f in slotFeatures {
+    Check.that(f.group == .dynamicIsland, "\(f.rawValue) 应属于 dynamicIsland 组")
+    Check.that(!FeatureCatalog.shared.metadata(for: f).isAction, "\(f.rawValue) 应为状态型开关")
+}
+// 默认语义：未写键时 time/memory/network 开、volume/date 关
+for (key, expected) in [
+    (DefaultsKey.islandShowTime, true), (DefaultsKey.islandShowMemory, true),
+    (DefaultsKey.islandShowNetwork, true), (DefaultsKey.islandShowVolume, false),
+    (DefaultsKey.islandShowDate, false),
+] {
+    UserDefaults.standard.removeObject(forKey: key.rawValue)
+    Check.that(DynamicIslandService.slotEnabled(key, defaultIfUnset: expected) == expected,
+               "\(key.rawValue) 未设置时应按默认 \(expected)")
+}
+// 开关持久化：测试进程没有跑 AppDelegate.registerServices，需先注册；
+// 再停掉 ▶1 留下的 active 态，toggle ON → 键为 true，OFF → false
+for (f, key) in zip(slotFeatures, slotKeys) {
+    if runtime.activeFeatures.contains(f) { runtime.stop(f) }
+    runtime.register(f, service: PreferenceToggleService(
+        feature: f,
+        on: { UserDefaults.standard.set(true, forKey: key.rawValue) },
+        off: { UserDefaults.standard.set(false, forKey: key.rawValue) }
+    ), binding: {})
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.featureEnabledKey(f.rawValue))
+    UserDefaults.standard.removeObject(forKey: key.rawValue)
+    runtime.toggle(f)
+    Check.that(UserDefaults.standard.bool(forKey: key.rawValue),
+               "\(f.rawValue) toggle ON 应写入 \(key.rawValue)=true")
+    runtime.toggle(f)
+    Check.that(!UserDefaults.standard.bool(forKey: key.rawValue),
+               "\(f.rawValue) toggle OFF 应写入 \(key.rawValue)=false")
+    runtime.unregister(f)
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.featureEnabledKey(f.rawValue))
+    UserDefaults.standard.removeObject(forKey: key.rawValue)
+}
+// 音量快照：-1（无主音量设备）或 0–100
+let vol = SystemMetrics().snapshot().volumePercent
+Check.that(vol == -1 || (vol >= 0 && vol <= 100), "volumePercent 应为 -1 或 0–100，实际 \(vol)")
+// 恢复时间槽默认开（试用机上面板常用态）
+UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowTime.rawValue)
+
 cleanFeaturePrefs()
 Check.finish()

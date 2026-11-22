@@ -1,16 +1,37 @@
-// DynamicIslandView.swift — the island's face: one pill, live metrics
+// DynamicIslandView.swift — the island's face: one pill, live slots
 //
-// Rendered inside the service's floating panel. Compact shows CPU + battery;
-// clicking morphs to expanded, adding memory and network. Content switches
-// (island_show_cpu / island_show_battery) are plain UserDefaults so the
-// panel tab can toggle them without touching window lifecycle.
+// Rendered inside the service's floating panel. Every slot (time, date,
+// volume, cpu, memory, battery, network) is individually toggleable from the
+// island tab via plain UserDefaults keys; compact shows the first three
+// enabled slots as glyphs, expanded shows all of them. The service widens
+// the panel to match, so nothing clips.
 
 import SwiftUI
 
 struct DynamicIslandFace: View {
     @ObservedObject var service: DynamicIslandService
+    @AppStorage(DefaultsKey.islandShowTime.rawValue) private var showTime = true
+    @AppStorage(DefaultsKey.islandShowDate.rawValue) private var showDate = false
+    @AppStorage(DefaultsKey.islandShowVolume.rawValue) private var showVolume = false
     @AppStorage(DefaultsKey.islandShowCPU.rawValue) private var showCPU = true
+    @AppStorage(DefaultsKey.islandShowMemory.rawValue) private var showMemory = true
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
+    @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
+
+    private enum IslandSlot { case time, date, volume, cpu, memory, battery, network }
+
+    /// Fixed priority order — enabled slots surface left to right.
+    private var enabledSlots: [IslandSlot] {
+        var slots: [IslandSlot] = []
+        if showTime { slots.append(.time) }
+        if showDate { slots.append(.date) }
+        if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
+        if showCPU { slots.append(.cpu) }
+        if showMemory { slots.append(.memory) }
+        if showBattery, service.batteryPercent >= 0 { slots.append(.battery) }
+        if showNetwork { slots.append(.network) }
+        return slots
+    }
 
     var body: some View {
         ZStack {
@@ -29,49 +50,105 @@ struct DynamicIslandFace: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
     }
 
-    // MARK: - Compact: icon + CPU, battery glyph on the right
+    // MARK: - Compact: at most three glyphs (clock spelled out, rest icons)
 
     private var compactContent: some View {
         HStack(spacing: 10) {
-            if showCPU {
-                HStack(spacing: 4) {
-                    Image(systemName: "cpu.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(cpuColor)
-                    Text("\(Int(service.cpuPercent))%")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundColor(.white)
-                }
-            }
-            if showBattery, service.batteryPercent >= 0 {
-                batteryGlyph
+            ForEach(Array(enabledSlots.prefix(3).enumerated()), id: \.offset) { _, slot in
+                compactSlot(slot)
             }
         }
         .padding(.horizontal, 16)
     }
 
-    // MARK: - Expanded: labelled rows for every live metric
+    @ViewBuilder
+    private func compactSlot(_ slot: IslandSlot) -> some View {
+        switch slot {
+        case .time:
+            Text(Self.timeFormatter.string(from: service.now))
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundColor(.white)
+        case .date:
+            Image(systemName: "calendar")
+                .font(.system(size: 11))
+                .foregroundColor(.pink)
+        case .volume:
+            Image(systemName: service.volumeMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: 11))
+                .foregroundColor(service.volumeMuted ? .orange : .white)
+        case .cpu:
+            Image(systemName: "cpu.fill")
+                .font(.system(size: 11))
+                .foregroundColor(cpuColor)
+        case .memory:
+            Image(systemName: "memorychip.fill")
+                .font(.system(size: 11))
+                .foregroundColor(.purple)
+        case .battery:
+            batteryGlyph
+        case .network:
+            Image(systemName: "arrow.down")
+                .font(.system(size: 11))
+                .foregroundColor(.teal)
+        }
+    }
+
+    // MARK: - Expanded: every enabled slot with its value
 
     private var expandedContent: some View {
         HStack(spacing: 14) {
-            if showCPU {
-                metric(icon: "cpu.fill", color: cpuColor,
-                       label: L("island.cpu", "CPU"),
-                       value: "\(Int(service.cpuPercent))%")
+            ForEach(Array(enabledSlots.enumerated()), id: \.offset) { _, slot in
+                expandedSlot(slot)
             }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    @ViewBuilder
+    private func expandedSlot(_ slot: IslandSlot) -> some View {
+        switch slot {
+        case .time:
+            VStack(spacing: 2) {
+                Text(Self.timeFormatter.string(from: service.now))
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.white)
+                Text(L("island.time", "Time"))
+                    .font(.system(size: 8))
+                    .foregroundColor(.white.opacity(0.55))
+            }
+        case .date:
+            VStack(spacing: 2) {
+                Text(Self.dateFormatter.string(from: service.now))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white)
+                Text(L("island.date", "Date"))
+                    .font(.system(size: 8))
+                    .foregroundColor(.white.opacity(0.55))
+            }
+        case .volume:
+            metric(icon: service.volumeMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                   color: service.volumeMuted ? .orange : .white,
+                   label: L("island.volume", "Volume"),
+                   value: service.volumeMuted
+                       ? L("island.muted", "Muted")
+                       : "\(Int(service.volumePercent))%")
+        case .cpu:
+            metric(icon: "cpu.fill", color: cpuColor,
+                   label: L("island.cpu", "CPU"),
+                   value: "\(Int(service.cpuPercent))%")
+        case .memory:
             metric(icon: "memorychip.fill", color: .purple,
                    label: L("island.memory", "Memory"),
                    value: "\(Int(service.memoryPercent))%")
-            if showBattery, service.batteryPercent >= 0 {
-                metric(icon: "bolt.fill", color: .green,
-                       label: L("island.battery", "Battery"),
-                       value: "\(Int(service.batteryPercent))%")
-            }
+        case .battery:
+            metric(icon: "bolt.fill", color: .green,
+                   label: L("island.battery", "Battery"),
+                   value: "\(Int(service.batteryPercent))%")
+        case .network:
             metric(icon: "arrow.down", color: .teal,
                    label: L("island.network", "Net"),
                    value: String(format: "%.0fKB/s", service.networkDownKBps))
         }
-        .padding(.horizontal, 16)
     }
 
     private func metric(icon: String, color: Color, label: String, value: String) -> some View {
@@ -112,4 +189,17 @@ struct DynamicIslandFace: View {
         default: return "battery.100percent"
         }
     }
+
+    // Cached formatters — the face re-renders every second via service.now.
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("MdEEE") // e.g. 12/22 周一
+        return f
+    }()
 }

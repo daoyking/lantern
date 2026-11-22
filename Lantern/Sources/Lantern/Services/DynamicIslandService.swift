@@ -20,8 +20,33 @@ public final class DynamicIslandService: BaseFeatureService {
     // MARK: - Geometry
 
     private static let compactSize = CGSize(width: 190, height: 38)
-    private static let expandedSize = CGSize(width: 260, height: 64)
     private static let topInset: CGFloat = 0   // flush with the top edge
+
+    /// Expanded pill grows with the number of enabled slots so nothing clips.
+    private var expandedSize: CGSize {
+        CGSize(width: max(260, 130 + 46 * enabledSlotCount), height: 64)
+    }
+
+    /// Slot flags default ON for the metrics the island always showed
+    /// (cpu/memory/battery/network) and the clock; volume/date start OFF.
+    static func slotEnabled(_ key: DefaultsKey, defaultIfUnset: Bool) -> Bool {
+        let defaults = UserDefaults.standard
+        return defaults.object(forKey: key.rawValue) == nil
+            ? defaultIfUnset
+            : defaults.bool(forKey: key.rawValue)
+    }
+
+    private var enabledSlotCount: Int {
+        var count = 0
+        if Self.slotEnabled(.islandShowTime, defaultIfUnset: true) { count += 1 }
+        if Self.slotEnabled(.islandShowDate, defaultIfUnset: false) { count += 1 }
+        if Self.slotEnabled(.islandShowVolume, defaultIfUnset: false), volumePercent >= 0 { count += 1 }
+        if Self.slotEnabled(.islandShowCPU, defaultIfUnset: true) { count += 1 }
+        if Self.slotEnabled(.islandShowMemory, defaultIfUnset: true) { count += 1 }
+        if Self.slotEnabled(.islandShowBattery, defaultIfUnset: true), batteryPercent >= 0 { count += 1 }
+        if Self.slotEnabled(.islandShowNetwork, defaultIfUnset: true) { count += 1 }
+        return count
+    }
 
     // MARK: - Live state (observed by the island face)
 
@@ -30,6 +55,11 @@ public final class DynamicIslandService: BaseFeatureService {
     /// -1 means no battery (desktops); the face hides the gauge then.
     @Published public private(set) var batteryPercent: Double = -1
     @Published public private(set) var networkDownKBps: Double = 0
+    /// -1 means the output device exposes no master volume; face hides it.
+    @Published public private(set) var volumePercent: Double = -1
+    @Published public private(set) var volumeMuted: Bool = false
+    /// Refreshed every tick so clock/date slots re-render.
+    @Published public private(set) var now: Date = Date()
 
     @Published public private(set) var expanded: Bool = false
 
@@ -75,7 +105,7 @@ public final class DynamicIslandService: BaseFeatureService {
     /// so the visual pill morphs in place instead of drifting.
     private func resizePanel() {
         guard let panel, let screen = NSScreen.main else { return }
-        let size = expanded ? Self.expandedSize : Self.compactSize
+        let size = expanded ? expandedSize : Self.compactSize
         let frame = NSRect(
             x: screen.frame.midX - size.width / 2,
             y: screen.frame.maxY - size.height - Self.topInset,
@@ -94,7 +124,7 @@ public final class DynamicIslandService: BaseFeatureService {
     private func createPanelIfNeeded() {
         guard panel == nil, let screen = NSScreen.main else { return }
 
-        let size = expanded ? Self.expandedSize : Self.compactSize
+        let size = expanded ? expandedSize : Self.compactSize
         let origin = CGPoint(
             x: screen.frame.midX - Self.compactSize.width / 2,
             y: screen.frame.maxY - size.height - Self.topInset
@@ -137,5 +167,8 @@ public final class DynamicIslandService: BaseFeatureService {
         if s.batteryPercent >= 0 {
             batteryPercent = s.batteryPercent
         }
+        volumePercent = s.volumePercent
+        volumeMuted = s.volumeMuted
+        now = Date()
     }
 }

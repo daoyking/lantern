@@ -59,6 +59,11 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case dynamicIslandEnabled = "dynamicIslandEnabled"
     case dynamicIslandShowCPU = "dynamicIslandShowCPU"
     case dynamicIslandShowBattery = "dynamicIslandShowBattery"
+    case dynamicIslandShowVolume = "dynamicIslandShowVolume"
+    case dynamicIslandShowTime = "dynamicIslandShowTime"
+    case dynamicIslandShowDate = "dynamicIslandShowDate"
+    case dynamicIslandShowMemory = "dynamicIslandShowMemory"
+    case dynamicIslandShowNetwork = "dynamicIslandShowNetwork"
 
     /// Unique ID for SwiftUI list identification
     public var id: String { rawValue }
@@ -84,7 +89,9 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .keepAwake, .portControl, .processKiller,
              .fileShredder, .colorPicker:
             return .tools
-        case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery:
+        case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
+             .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
+             .dynamicIslandShowMemory, .dynamicIslandShowNetwork:
             return .dynamicIsland
         }
     }
@@ -132,6 +139,11 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .dynamicIslandEnabled: return localized("name", "Dynamic Island")
         case .dynamicIslandShowCPU: return localized("name", "Island: CPU")
         case .dynamicIslandShowBattery: return localized("name", "Island: Battery")
+        case .dynamicIslandShowVolume: return localized("name", "Island: Volume")
+        case .dynamicIslandShowTime: return localized("name", "Island: Time")
+        case .dynamicIslandShowDate: return localized("name", "Island: Date")
+        case .dynamicIslandShowMemory: return localized("name", "Island: Memory")
+        case .dynamicIslandShowNetwork: return localized("name", "Island: Network")
         }
     }
 
@@ -174,6 +186,11 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .dynamicIslandEnabled: return localized("desc", "Floating island at the top of the screen with live CPU / memory / battery")
         case .dynamicIslandShowCPU: return localized("desc", "Show CPU stats in the island")
         case .dynamicIslandShowBattery: return localized("desc", "Show battery status in the island")
+        case .dynamicIslandShowVolume: return localized("desc", "Show output volume in the island")
+        case .dynamicIslandShowTime: return localized("desc", "Show the clock in the island")
+        case .dynamicIslandShowDate: return localized("desc", "Show the date in the island")
+        case .dynamicIslandShowMemory: return localized("desc", "Show memory pressure in the island")
+        case .dynamicIslandShowNetwork: return localized("desc", "Show network throughput in the island")
         }
     }
 }
