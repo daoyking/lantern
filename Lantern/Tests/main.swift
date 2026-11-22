@@ -34,15 +34,21 @@ let runtime = FeatureRuntime.shared
 cleanFeaturePrefs()
 for f in Array(runtime.activeFeatures) { runtime.stop(f) }
 
-print("▶ 1. 每个 stateful feature（含无 service 的）toggle 都能切换；动作型执行后不锁状态")
+print("▶ 1. 每个 stateful feature（含无 service 的）toggle 都能切换；动作型执行后不锁状态；未授权的门控型保持关闭")
 for f in AppFeature.allCases {
-    let isAction = FeatureCatalog.shared.metadata(for: f).isAction
+    let meta = FeatureCatalog.shared.metadata(for: f)
+    let perm = meta.requiresPermission
+    let gated = perm != nil && perm != PermissionType.none
+        && !Permissions.shared.isGranted(perm!)
     Check.that(!runtime.activeFeatures.contains(f), "\(f.rawValue) 初始应为关闭")
     runtime.toggle(f)
-    if isAction {
+    if meta.isAction {
         // One-shot actions never latch into activeFeatures (no dead switch,
         // no stale "on" state) — they just fire their binding.
         Check.that(!runtime.activeFeatures.contains(f), "\(f.rawValue) 动作型不应锁存 on 状态")
+    } else if gated {
+        // The gate asks for the permission instead of activating.
+        Check.that(!runtime.activeFeatures.contains(f), "\(f.rawValue) 未授权时不应激活（门控回归）")
     } else {
         Check.that(runtime.activeFeatures.contains(f), "\(f.rawValue) 打开失败（死开关回归）")
         runtime.toggle(f)

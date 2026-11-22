@@ -134,7 +134,7 @@
 "feature.forceQuitDialog.desc" = "打开系统强制退出对话框";
 
 "feature.invertScroll.name" = "反转滚动方向";
-"feature.invertScroll.desc" = "反转滚动方向（系统偏好设置）";
+"feature.invertScroll.desc" = "实时反转滚动方向（事件拦截，免注销）";
 "feature.mouseSensitivity.name" = "指针速度";
 "feature.mouseSensitivity.desc" = "设置指针速度并打开鼠标设置";
 "feature.keyboardRepeatRate.name" = "按键重复速率";

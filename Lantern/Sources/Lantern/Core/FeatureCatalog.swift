@@ -233,9 +233,11 @@ public final class FeatureCatalog {
         )
 
         // ── Mouse & Keyboard ───────────────────────────────────────────
-        // Scroll direction / pointer speed / key repeat: real defaults writes.
+        // Scroll inversion: live CGEventTap — a mutable tap needs Accessibility.
+        // Pointer speed / key repeat: real defaults writes.
         // Double-click speed & cursor size have no public key → open settings pane.
         map[.invertScroll] = FeatureMetadata(
+            requiresPermission: .accessibility,
             installedByDefault: true, displayPriority: 1, implementation: .native
         )
         map[.mouseSensitivity] = FeatureMetadata(displayPriority: 2, implementation: .native)

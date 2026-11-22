@@ -144,7 +144,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .windowSnap: return localized("desc", "Snap the frontmost window to the left half")
         case .hideAllWindows: return localized("desc", "Hide all app windows (Option+Command+H)")
         case .forceQuitDialog: return localized("desc", "Open the system Force Quit dialog")
-        case .invertScroll: return localized("desc", "Reverse scroll direction (system preference)")
+        case .invertScroll: return localized("desc", "Reverse scroll direction instantly (event tap)")
         case .mouseSensitivity: return localized("desc", "Set pointer speed and open Mouse settings")
         case .keyboardRepeatRate: return localized("desc", "Set key repeat rate (faster / default)")
         case .doubleClickSpeed: return localized("desc", "Open Mouse settings to adjust double-click speed")

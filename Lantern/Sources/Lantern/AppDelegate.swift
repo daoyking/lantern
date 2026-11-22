@@ -227,12 +227,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             off: { DockSettings.setSize(38) }
         ), binding: {})
 
-        // Scroll direction — real com.apple.swipescrolldirection preference.
-        runtime.register(.invertScroll, service: PreferenceToggleService(
-            feature: .invertScroll,
-            on: { InputSettings.setNaturalScroll(false) },
-            off: { InputSettings.setNaturalScroll(true) }
-        ), binding: {})
+        // Scroll direction — live inversion via event tap (no re-login needed,
+        // and the user's system preference stays untouched).
+        runtime.register(.invertScroll,
+                         service: ScrollInversionService(feature: .invertScroll),
+                         binding: {})
 
         // Pointer speed / key repeat — real defaults + open owning settings pane.
         runtime.register(.mouseSensitivity, service: PreferenceToggleService(
