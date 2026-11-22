@@ -351,12 +351,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // buttons share one service instance and toggle cancel semantics.
         runtime.register(.quickTimer, service: QuickTimerService.shared, binding: {})
         runtime.register(.timerStart5, service: QuickTimerService.shared) {
+            FeatureRuntime.shared.activateIfNeeded(.quickTimer)
             QuickTimerService.shared.start(minutes: 5)
         }
         runtime.register(.timerStart10, service: QuickTimerService.shared) {
+            FeatureRuntime.shared.activateIfNeeded(.quickTimer)
             QuickTimerService.shared.start(minutes: 10)
         }
         runtime.register(.timerStart25, service: QuickTimerService.shared) {
+            FeatureRuntime.shared.activateIfNeeded(.quickTimer)
             QuickTimerService.shared.start(minutes: 25)
         }
 

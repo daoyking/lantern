@@ -119,6 +119,15 @@ public final class FeatureRuntime: ObservableObject {
     /// Execute a one-shot action through its registered binding. Action
     /// features do not persist an "on" state — clicking is the whole effect.
     /// Gated actions check their permission first for the same reason.
+    /// Turn a state feature ON if it isn't already (no-op when active).
+    /// Used by action features that presuppose their gate: tapping
+    /// "Timer 5 min" auto-enables the quickTimer toggle so the service's
+    /// tick actually runs — otherwise the countdown is set but never ticks.
+    public func activateIfNeeded(_ feature: AppFeature) {
+        guard !activeFeatures.contains(feature) else { return }
+        toggle(feature)
+    }
+
     public func performAction(_ feature: AppFeature) {
         guard gate(feature) else { return }
         bindings[feature]?()
