@@ -305,6 +305,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         runtime.register(.soundVolumeDown, service: actionsMixer) { actionsMixer.decreaseVolume() }
         runtime.register(.soundMuteToggle, service: actionsMixer) { actionsMixer.toggleMute() }
 
+        // Music control — universal media keys (no TCC permission); the
+        // same instance also owns now-playing polling that the island slot
+        // drives via setRunning, so the panel and the island share one
+        // controller.
+        let music = MusicControllerService(feature: .musicPlayPause)
+        runtime.register(.musicPlayPause, service: music) { music.playPause() }
+        runtime.register(.musicNextTrack, service: music) { music.nextTrack() }
+        runtime.register(.musicPrevTrack, service: music) { music.previousTrack() }
+
         // Input device select — real Core Audio, cycle to next device.
         let devicesMixer = SoundMixerService(feature: .inputDeviceSelect)
         runtime.register(.inputDeviceSelect, service: devicesMixer) {
@@ -356,6 +365,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (AppFeature.dynamicIslandShowMemory, DefaultsKey.islandShowMemory, true),
             (AppFeature.dynamicIslandShowNetwork, DefaultsKey.islandShowNetwork, true),
             (AppFeature.dynamicIslandShowWeather, DefaultsKey.islandShowWeather, false),
+            (AppFeature.dynamicIslandShowMusic, DefaultsKey.islandShowMusic, false),
         ] {
             runtime.register(feature, service: PreferenceToggleService(
                 feature: feature,

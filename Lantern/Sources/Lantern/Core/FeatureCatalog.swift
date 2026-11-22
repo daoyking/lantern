@@ -280,6 +280,9 @@ public final class FeatureCatalog {
         map[.soundVolumeUp] = FeatureMetadata(displayPriority: 5, implementation: .native, isAction: true)
         map[.soundVolumeDown] = FeatureMetadata(displayPriority: 6, implementation: .native, isAction: true)
         map[.soundMuteToggle] = FeatureMetadata(displayPriority: 7, implementation: .native, isAction: true)
+        map[.musicPlayPause] = FeatureMetadata(displayPriority: 8, implementation: .native, isAction: true)
+        map[.musicNextTrack] = FeatureMetadata(displayPriority: 9, implementation: .native, isAction: true)
+        map[.musicPrevTrack] = FeatureMetadata(displayPriority: 10, implementation: .native, isAction: true)
 
         // ── Window Management (actions, AppleScript-backed) ────────────
         // Every entry runs `System Events` AppleScript — Accessibility TCC
@@ -393,6 +396,11 @@ public final class FeatureCatalog {
         map[.dynamicIslandShowWeather] = FeatureMetadata(
             installedByDefault: true,
             displayPriority: 9,
+            implementation: .native
+        )
+        map[.dynamicIslandShowMusic] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 10,
             implementation: .native
         )
 

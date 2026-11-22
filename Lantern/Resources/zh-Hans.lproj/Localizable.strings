@@ -245,3 +245,12 @@
 "wmo.snow" = "雪";
 "wmo.showers" = "阵雨";
 "wmo.thunder" = "雷雨";
+"feature.musicPlayPause.name" = "播放 / 暂停";
+"feature.musicPlayPause.desc" = "发送系统播放/暂停媒体键（对所有播放器生效）";
+"feature.musicNextTrack.name" = "下一首";
+"feature.musicNextTrack.desc" = "发送下一首媒体键";
+"feature.musicPrevTrack.name" = "上一首";
+"feature.musicPrevTrack.desc" = "发送上一首媒体键";
+"feature.dynamicIslandShowMusic.name" = "灵动岛：音乐";
+"feature.dynamicIslandShowMusic.desc" = "在悬浮岛显示正在播放的音乐";
+"island.music" = "音乐";

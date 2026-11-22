@@ -40,8 +40,19 @@ public final class DynamicIslandService: BaseFeatureService {
     /// clips, and is tall enough that its content band starts below the
     /// hardware notch instead of behind it.
     private var expandedSize: CGSize {
-        CGSize(width: CGFloat(max(260, 130 + 46 * enabledSlotCount)),
-               height: Self.notchHeight + 48)
+        // The music slot is wider (title + artist + transport buttons).
+        let base: CGFloat = CGFloat(max(260, 130 + 46 * enabledSlotCount))
+        let musicExtra: CGFloat = musicSlotActive ? 110 : 0
+        return CGSize(width: base + musicExtra,
+                      height: Self.notchHeight + 48)
+    }
+
+    /// The music slot counts its own width; every other slot is the flat 46.
+    private var musicSlotActive: Bool {
+        guard Self.slotEnabled(.islandShowMusic, defaultIfUnset: false),
+              let music = MusicControllerService.shared,
+              music.trackTitle != nil else { return false }
+        return true
     }
 
     /// Slot flags default ON for the metrics the island always showed
@@ -201,6 +212,15 @@ public final class DynamicIslandService: BaseFeatureService {
         weather.setRunning(wantWeather)
         weatherTempC = wantWeather ? weather.temperatureC : nil
         weatherCode = wantWeather ? weather.weatherCode : nil
+        // Music slot: same slot-driven pattern — poll AppleScript only
+        // while the slot is on; the controller lives in FeatureRuntime
+        // (created by AppDelegate) so panel actions share one instance.
+        let wantMusic = Self.slotEnabled(.islandShowMusic, defaultIfUnset: false)
+        if wantMusic {
+            MusicControllerService.shared?.setRunning(true)
+        } else {
+            MusicControllerService.shared?.setRunning(false)
+        }
         now = Date()
     }
 }

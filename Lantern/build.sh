@@ -83,6 +83,7 @@ build() {
         Sources/Lantern/Services/ClipboardService.swift
         Sources/Lantern/Services/DynamicIslandService.swift
         Sources/Lantern/Services/IslandWeatherService.swift
+        Sources/Lantern/Services/MusicControllerService.swift
         Sources/Lantern/Services/EnergyMonitorService.swift
         Sources/Lantern/Services/ScrollInversionService.swift
         Sources/Lantern/Services/KeepAwakeService.swift

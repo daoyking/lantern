@@ -12,16 +12,28 @@ import SwiftUI
 
 struct DynamicIslandFace: View {
     @ObservedObject var service: DynamicIslandService
+    // Owns the music controller reactively — without observing it, the
+    // face would only refresh track changes on the 1s metric tick.
+    @ObservedObject var music: MusicControllerService
     @AppStorage(DefaultsKey.islandShowTime.rawValue) private var showTime = true
     @AppStorage(DefaultsKey.islandShowDate.rawValue) private var showDate = false
     @AppStorage(DefaultsKey.islandShowWeather.rawValue) private var showWeather = false
+    @AppStorage(DefaultsKey.islandShowMusic.rawValue) private var showMusic = false
     @AppStorage(DefaultsKey.islandShowVolume.rawValue) private var showVolume = false
     @AppStorage(DefaultsKey.islandShowCPU.rawValue) private var showCPU = true
     @AppStorage(DefaultsKey.islandShowMemory.rawValue) private var showMemory = true
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, weather, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case time, date, weather, music, volume, cpu, memory, battery, network }
+
+    init(service: DynamicIslandService) {
+        self.service = service
+        // AppDelegate creates the controller at registration time; tests
+        // may run without it, so fall back to a throwaway instance.
+        _music = ObservedObject(wrappedValue: MusicControllerService.shared
+            ?? MusicControllerService(feature: .musicPlayPause))
+    }
 
     /// Fixed priority order — enabled slots surface left to right.
     private var enabledSlots: [IslandSlot] {
@@ -29,6 +41,7 @@ struct DynamicIslandFace: View {
         if showTime { slots.append(.time) }
         if showDate { slots.append(.date) }
         if showWeather, service.weatherTempC != nil { slots.append(.weather) }
+        if showMusic, music.trackTitle != nil { slots.append(.music) }
         if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
         if showCPU { slots.append(.cpu) }
         if showMemory { slots.append(.memory) }
@@ -97,6 +110,46 @@ struct DynamicIslandFace: View {
                        color: .cyan,
                        label: L("island.weather", "Weather"),
                        value: "\(L(cond.key, cond.english)) \(Int(temp))°")
+            }
+        case .music:
+            // Wide slot: track title over artist, transport buttons below.
+            if let title = music.trackTitle {
+                VStack(spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: 96)
+                    if let artist = music.trackArtist, !artist.isEmpty {
+                        Text(artist)
+                            .font(.system(size: 8))
+                            .foregroundColor(.white.opacity(0.55))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: 96)
+                    }
+                    HStack(spacing: 14) {
+                        Button(action: music.previousTrack) {
+                            Image(systemName: "backward.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(.white.opacity(0.85))
+                        }
+                        .buttonStyle(.plain)
+                        Button(action: music.playPause) {
+                            Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.white)
+                        }
+                        .buttonStyle(.plain)
+                        Button(action: music.nextTrack) {
+                            Image(systemName: "forward.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(.white.opacity(0.85))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         case .volume:
             VStack(spacing: 3) {

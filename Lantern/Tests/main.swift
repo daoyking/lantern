@@ -451,5 +451,71 @@ Check.that(!UserDefaults.standard.bool(forKey: DefaultsKey.islandShowWeather.raw
 runtime.unregister(.dynamicIslandShowWeather)
 UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowWeather.rawValue)
 
+// ▶24 音乐控制：媒体键编码、now-playing 解析、三动作特征
+print("▶ 24. 音乐控制（媒体键编码 + now-playing 解析 + 槽位接线）")
+// 媒体键事件 data1 编码：高位 keyCode，低字节 0xA=按下 / 0xB=抬起
+Check.that(MusicControllerService.mediaKeyEventData1(keyCode: 16, keyDown: true) == (16 << 16) | 0x0A,
+           "播放键按下应编码 (16<<16)|0x0A")
+Check.that(MusicControllerService.mediaKeyEventData1(keyCode: 16, keyDown: false) == (16 << 16) | 0x0B,
+           "播放键抬起应编码 (16<<16)|0x0B")
+Check.that(MusicControllerService.mediaKeyEventData1(keyCode: 17, keyDown: true) == (17 << 16) | 0x0A,
+           "下一首键按下应编码 (17<<16)|0x0A")
+Check.that(MusicControllerService.mediaKeyEventData1(keyCode: 18, keyDown: false) == (18 << 16) | 0x0B,
+           "上一首键抬起应编码 (18<<16)|0x0B")
+Check.that(MusicControllerService.keyPlay == 16 && MusicControllerService.keyNext == 17
+           && MusicControllerService.keyPrevious == 18,
+           "NX 媒体键码应为 16/17/18")
+// now-playing 解析："title<US>artist<US>state"
+let us = "\u{001F}"
+Check.that(MusicControllerService.parseNowPlaying("歌名\(us)歌手\(us)playing", stateKey: "playing")?.title == "歌名",
+           "播放中应解析出歌名")
+Check.that(MusicControllerService.parseNowPlaying("歌名\(us)歌手\(us)playing", stateKey: "playing")?.artist == "歌手",
+           "播放中应解析出歌手")
+Check.that(MusicControllerService.parseNowPlaying("\(us)\(us)paused", stateKey: "playing") == nil,
+           "暂停态应返回 nil")
+Check.that(MusicControllerService.parseNowPlaying("歌名\(us)歌手\(us)playing".replacingOccurrences(of: "playing", with: "stopped"), stateKey: "playing") == nil,
+           "停止态应返回 nil")
+Check.that(MusicControllerService.parseNowPlaying("no-separator", stateKey: "playing") == nil,
+           "无分隔符应返回 nil")
+Check.that(MusicControllerService.parseNowPlaying("a\(us)b", stateKey: "playing") == nil,
+           "字段不足应返回 nil")
+// AppleScript 模板：两个播放器同构，只差应用名
+Check.that(MusicControllerService.musicScript().contains(#"tell application "Music""#),
+           "Music 脚本应指向 Music.app")
+Check.that(MusicControllerService.spotifyScript().contains(#"tell application "Spotify""#),
+           "Spotify 脚本应指向 Spotify.app")
+Check.that(MusicControllerService.musicScript().contains("player state as text"),
+           "脚本应查询播放状态")
+// 特征接线：三动作属于 sound 组且都是动作型；音乐槽开关属于岛组且默认关
+Check.that(AppFeature.musicPlayPause.group == .sound
+           && AppFeature.musicNextTrack.group == .sound
+           && AppFeature.musicPrevTrack.group == .sound,
+           "三个音乐动作应属于 sound 组")
+Check.that(FeatureCatalog.shared.metadata(for: .musicPlayPause).isAction
+           && FeatureCatalog.shared.metadata(for: .musicNextTrack).isAction
+           && FeatureCatalog.shared.metadata(for: .musicPrevTrack).isAction,
+           "三个音乐动作应为动作型特征")
+Check.that(AppFeature.dynamicIslandShowMusic.group == .dynamicIsland,
+           "音乐槽开关应属于 dynamicIsland 组")
+Check.that(!FeatureCatalog.shared.metadata(for: .dynamicIslandShowMusic).isAction,
+           "音乐槽开关应为状态型")
+if runtime.activeFeatures.contains(.dynamicIslandShowMusic) { runtime.stop(.dynamicIslandShowMusic) }
+runtime.register(.dynamicIslandShowMusic, service: PreferenceToggleService(
+    feature: .dynamicIslandShowMusic,
+    on: { UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowMusic.rawValue) },
+    off: { UserDefaults.standard.set(false, forKey: DefaultsKey.islandShowMusic.rawValue) }
+), binding: {})
+UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowMusic.rawValue)
+Check.that(DynamicIslandService.slotEnabled(.islandShowMusic, defaultIfUnset: false) == false,
+           "音乐槽未设置时应默认关")
+runtime.toggle(.dynamicIslandShowMusic)
+Check.that(UserDefaults.standard.bool(forKey: DefaultsKey.islandShowMusic.rawValue),
+           "音乐槽 toggle ON 应写入 true")
+runtime.toggle(.dynamicIslandShowMusic)
+Check.that(!UserDefaults.standard.bool(forKey: DefaultsKey.islandShowMusic.rawValue),
+           "音乐槽 toggle OFF 应写入 false")
+runtime.unregister(.dynamicIslandShowMusic)
+UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowMusic.rawValue)
+
 cleanFeaturePrefs()
 Check.finish()

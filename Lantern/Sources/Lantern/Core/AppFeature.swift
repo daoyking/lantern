@@ -31,6 +31,9 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case inputDeviceSelect = "inputDeviceSelect"
     case audioToggle = "audioToggle"
     case notificationSound = "notificationSound"
+    case musicPlayPause = "musicPlayPause"
+    case musicNextTrack = "musicNextTrack"
+    case musicPrevTrack = "musicPrevTrack"
     
     // ── Window Management (Phase 6) ──────────────────────────────────
     case windowMinimizeAll = "windowMinimizeAll"
@@ -65,6 +68,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case dynamicIslandShowMemory = "dynamicIslandShowMemory"
     case dynamicIslandShowNetwork = "dynamicIslandShowNetwork"
     case dynamicIslandShowWeather = "dynamicIslandShowWeather"
+    case dynamicIslandShowMusic = "dynamicIslandShowMusic"
 
     /// Unique ID for SwiftUI list identification
     public var id: String { rawValue }
@@ -82,7 +86,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
             return .clipboard
         case .volumeMixer, .inputDeviceSelect, .audioToggle, .notificationSound,
              .windowMinimizeAll, .windowSwitchApp,
-             .soundVolumeUp, .soundVolumeDown, .soundMuteToggle:
+             .soundVolumeUp, .soundVolumeDown, .soundMuteToggle,
+             .musicPlayPause, .musicNextTrack, .musicPrevTrack:
             return .sound
         case .cpuMonitor, .gpuMonitor, .memoryMonitor,
              .networkMonitor, .batteryDisplay:
@@ -92,7 +97,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
-             .dynamicIslandShowMemory, .dynamicIslandShowNetwork, .dynamicIslandShowWeather:
+             .dynamicIslandShowMemory, .dynamicIslandShowNetwork, .dynamicIslandShowWeather,
+             .dynamicIslandShowMusic:
             return .dynamicIsland
         }
     }
@@ -127,6 +133,10 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .soundVolumeUp: return localized("name", "Volume Up +5%")
         case .soundVolumeDown: return localized("name", "Volume Down -5%")
         case .soundMuteToggle: return localized("name", "Toggle Mute")
+        case .musicPlayPause: return localized("name", "Play / Pause")
+        case .musicNextTrack: return localized("name", "Next Track")
+        case .musicPrevTrack: return localized("name", "Previous Track")
+        case .dynamicIslandShowMusic: return localized("name", "Island: Music")
         case .cpuMonitor: return localized("name", "CPU Monitor")
         case .gpuMonitor: return localized("name", "GPU Monitor")
         case .memoryMonitor: return localized("name", "Memory Monitor")
@@ -194,6 +204,10 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .dynamicIslandShowMemory: return localized("desc", "Show memory pressure in the island")
         case .dynamicIslandShowNetwork: return localized("desc", "Show network throughput in the island")
         case .dynamicIslandShowWeather: return localized("desc", "Show local weather in the island (auto location)")
+        case .dynamicIslandShowMusic: return localized("desc", "Show the playing track in the island")
+        case .musicPlayPause: return localized("desc", "Send the system play/pause media key")
+        case .musicNextTrack: return localized("desc", "Send the next-track media key")
+        case .musicPrevTrack: return localized("desc", "Send the previous-track media key")
         }
     }
 }
