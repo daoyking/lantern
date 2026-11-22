@@ -376,6 +376,12 @@ public final class FeatureCatalog {
             implementation: .native,
             isAction: true
         )
+        // Focus session: toggle starts a 25-minute block; DND posted
+        // best-effort via the legacy distributed notification.
+        map[.focusMode] = FeatureMetadata(
+            displayPriority: 11,
+            implementation: .native
+        )
 
         // ── Dynamic Island ─────────────────────────────────────────────
         // Real floating panel + live SystemMetrics telemetry — the honest

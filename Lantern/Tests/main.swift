@@ -661,5 +661,47 @@ do {
                "timerStart25 应有目录元数据")
 }
 
+// ▶28 专注会话：25 分钟会话/剩余秒计算/中断恢复/特征接线
+do {
+    print("▶28 专注会话")
+    let focus = FocusService.shared
+    // Idle: nothing running
+    focus.setRunning(false)
+    Check.that(focus.endAt == nil && focus.remainingSeconds == 0, "空闲态无会话")
+    // Start a session via the service lifecycle
+    try? focus.start()
+    Check.that(focus.endAt != nil, "start() 应开启会话")
+    let remaining = focus.remainingSeconds
+    Check.that(remaining > FocusService.sessionSeconds - 5 && remaining <= FocusService.sessionSeconds,
+               "剩余秒应接近 25 分钟整 (\(remaining))")
+    let cap = focus.caption
+    Check.that(cap == "25:00" || (cap.hasSuffix(":59") || cap.hasSuffix(":58")),
+               "mm:ss 题注应格式正确 (\(cap))")
+    // Interrupt restores
+    focus.interrupt()
+    Check.that(focus.endAt == nil && focus.interrupted, "interrupt() 应中止会话")
+    // Lifecycle stop while idle is a no-op
+    try? focus.stop()
+    Check.that(focus.endAt == nil, "stop() 空闲无副作用")
+    // Wiring: group, state type, priority, persistence
+    Check.that(AppFeature.focusMode.group == .tools &&
+               !FeatureCatalog.shared.metadata(for: .focusMode).isAction &&
+               FeatureCatalog.shared.metadata(for: .focusMode).implementation == .native,
+               "focusMode 应为 tools 组状态型 .native")
+    let runtime = FeatureRuntime.shared
+    if runtime.activeFeatures.contains(.focusMode) { runtime.stop(.focusMode) }
+    runtime.register(.focusMode, service: FocusService.shared, binding: {})
+    let key = DefaultsKey.featureEnabledKey("focusMode")
+    UserDefaults.standard.removeObject(forKey: key)
+    runtime.toggle(.focusMode)
+    Check.that(runtime.activeFeatures.contains(.focusMode) &&
+               UserDefaults.standard.bool(forKey: key),
+               "focusMode toggle ON 应激活并持久化")
+    runtime.toggle(.focusMode)
+    Check.that(!runtime.activeFeatures.contains(.focusMode), "focusMode toggle OFF 应停用")
+    runtime.unregister(.focusMode)
+    UserDefaults.standard.removeObject(forKey: key)
+}
+
 cleanFeaturePrefs()
 Check.finish()

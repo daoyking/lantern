@@ -19,6 +19,7 @@ struct DynamicIslandFace: View {
     @ObservedObject var calendar: CalendarService
     // Quick timer: observed so the countdown repaints on the 1s metric tick.
     @ObservedObject var timer: QuickTimerService
+    @ObservedObject var focus: FocusService
     @AppStorage(DefaultsKey.islandShowTime.rawValue) private var showTime = true
     @AppStorage(DefaultsKey.islandShowDate.rawValue) private var showDate = false
     @AppStorage(DefaultsKey.islandShowWeather.rawValue) private var showWeather = false
@@ -26,13 +27,15 @@ struct DynamicIslandFace: View {
     @AppStorage(DefaultsKey.islandShowNextEvent.rawValue) private var showNextEvent = false
     // Timer slot follows the quickTimer feature toggle, not a dedicated key.
     @AppStorage(DefaultsKey.featureEnabledKey("quickTimer")) private var showTimer = false
+    // Focus slot likewise follows the focusMode feature toggle.
+    @AppStorage(DefaultsKey.featureEnabledKey("focusMode")) private var showFocus = false
     @AppStorage(DefaultsKey.islandShowVolume.rawValue) private var showVolume = false
     @AppStorage(DefaultsKey.islandShowCPU.rawValue) private var showCPU = true
     @AppStorage(DefaultsKey.islandShowMemory.rawValue) private var showMemory = true
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, weather, music, nextEvent, timer, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case time, date, weather, music, nextEvent, timer, focus, volume, cpu, memory, battery, network }
 
     init(service: DynamicIslandService) {
         self.service = service
@@ -42,6 +45,7 @@ struct DynamicIslandFace: View {
             ?? MusicControllerService(feature: .musicPlayPause))
         _calendar = ObservedObject(wrappedValue: CalendarService.shared)
         _timer = ObservedObject(wrappedValue: QuickTimerService.shared)
+        _focus = ObservedObject(wrappedValue: FocusService.shared)
     }
 
     /// Fixed priority order — enabled slots surface left to right.
@@ -53,6 +57,7 @@ struct DynamicIslandFace: View {
         if showMusic, music.trackTitle != nil { slots.append(.music) }
         if showNextEvent, calendar.nextEvent != nil { slots.append(.nextEvent) }
         if showTimer, timer.endAt != nil { slots.append(.timer) }
+        if showFocus, focus.endAt != nil { slots.append(.focus) }
         if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
         if showCPU { slots.append(.cpu) }
         if showMemory { slots.append(.memory) }
@@ -189,6 +194,17 @@ struct DynamicIslandFace: View {
                         .font(.system(size: 12, weight: .semibold, design: .monospaced))
                         .foregroundColor(.white)
                     Text(L("island.timer", "Timer"))
+                        .font(.system(size: 8))
+                        .foregroundColor(.white.opacity(0.55))
+                }
+            }
+        case .focus:
+            if focus.endAt != nil {
+                VStack(spacing: 2) {
+                    Text(focus.caption)
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.white)
+                    Text(L("island.focus", "Focus"))
                         .font(.system(size: 8))
                         .foregroundColor(.white.opacity(0.55))
                 }

@@ -62,6 +62,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case colorPicker = "colorPicker"
     case eyeBreak = "eyeBreak"
     case quickTimer = "quickTimer"
+    case focusMode = "focusMode"
 
     // ── Dynamic Island ───────────────────────────────────────────────
     case dynamicIslandEnabled = "dynamicIslandEnabled"
@@ -101,7 +102,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
              .networkMonitor, .batteryDisplay:
             return .energyDisplay
         case .keepAwake, .portControl, .processKiller,
-             .fileShredder, .colorPicker, .eyeBreak, .quickTimer:
+             .fileShredder, .colorPicker, .eyeBreak, .quickTimer, .focusMode:
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
@@ -158,6 +159,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .colorPicker: return localized("name", "Color Picker")
         case .eyeBreak: return localized("name", "Eye Break (20-20-20)")
         case .quickTimer: return localized("name", "Quick Timer")
+        case .focusMode: return localized("name", "Focus Session")
         case .timerStart5: return localized("name", "Timer 5 min")
         case .timerStart10: return localized("name", "Timer 10 min")
         case .timerStart25: return localized("name", "Timer 25 min")
@@ -210,6 +212,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .fileShredder: return localized("desc", "Overwrite and delete files you select")
         case .eyeBreak: return localized("desc", "Every 20 minutes, dim the screen for a 20-second eye break")
         case .quickTimer: return localized("desc", "Enable quick timers; the countdown shows on the island")
+        case .focusMode: return localized("desc", "25-minute focus session on the island; tries to mute notifications (legacy hook)")
         case .timerStart5: return localized("desc", "Start a 5-minute timer (tap again to cancel)")
         case .timerStart10: return localized("desc", "Start a 10-minute timer (tap again to cancel)")
         case .timerStart25: return localized("desc", "Start a 25-minute timer (tap again to cancel)")

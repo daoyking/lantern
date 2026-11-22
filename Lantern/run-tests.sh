@@ -35,8 +35,10 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Services/CalendarService.swift \
     Sources/Lantern/Services/EyeBreakService.swift \
     Sources/Lantern/Services/QuickTimerService.swift \
+    Sources/Lantern/Services/FocusService.swift \
     Sources/Lantern/UI/EyeBreakOverlay.swift \
     Sources/Lantern/UI/TimerDoneCard.swift \
+    Sources/Lantern/UI/FocusDoneCard.swift \
     Sources/Lantern/UI/DynamicIslandView.swift \
     Tests/main.swift
 

@@ -274,3 +274,8 @@
 "timerDone.title" = "⏰ 时间到";
 "timerDone.hint" = "%d 分钟计时结束";
 "island.openPanel" = "打开 Lantern 面板";
+"feature.focusMode.name" = "专注会话";
+"feature.focusMode.desc" = "开启 25 分钟专注，岛显示倒计时；尽力静音通知（遗留通道）";
+"island.focus" = "专注";
+"focusDone.title" = "🎯 专注完成";
+"focusDone.hint" = "专注 25 分钟，干得漂亮";

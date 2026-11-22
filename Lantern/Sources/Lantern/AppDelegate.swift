@@ -350,6 +350,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Quick timer — state toggle gates the service; the three duration
         // buttons share one service instance and toggle cancel semantics.
         runtime.register(.quickTimer, service: QuickTimerService.shared, binding: {})
+
+        // Focus session — toggle runs a 25-minute block on the island.
+        runtime.register(.focusMode, service: FocusService.shared, binding: {})
         runtime.register(.timerStart5, service: QuickTimerService.shared) {
             FeatureRuntime.shared.activateIfNeeded(.quickTimer)
             QuickTimerService.shared.start(minutes: 5)
