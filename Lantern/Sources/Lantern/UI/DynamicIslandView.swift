@@ -37,7 +37,7 @@ struct DynamicIslandFace: View {
 
     var body: some View {
         ZStack {
-            Capsule()
+            Rectangle()
                 .fill(Color.black.opacity(0.92))
                 .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
 
@@ -47,7 +47,7 @@ struct DynamicIslandFace: View {
                 compactContent
             }
         }
-        .contentShape(Capsule())
+        .contentShape(Rectangle())
         .onTapGesture { service.toggleExpanded() }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
     }
