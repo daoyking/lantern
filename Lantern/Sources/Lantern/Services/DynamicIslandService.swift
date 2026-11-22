@@ -19,7 +19,14 @@ public final class DynamicIslandService: BaseFeatureService {
 
     // MARK: - Geometry
 
-    private static let compactSize = CGSize(width: 190, height: 38)
+    /// Idle state mimics the hardware notch: 184pt wide, notch-height tall,
+    /// flush with the top edge. On notched Macs the black slab blends into
+    /// the real notch (nothing extra visible); on notch-less displays it
+    /// reads as a small top-centre bar.
+    private static var compactSize: CGSize {
+        let notchHeight = NSScreen.main?.safeAreaInsets.top ?? 0
+        return CGSize(width: 184, height: notchHeight >= 24 ? notchHeight : 32)
+    }
     private static let topInset: CGFloat = 0   // flush with the top edge
 
     /// Expanded pill grows with the number of enabled slots so nothing clips.

@@ -1,10 +1,12 @@
-// DynamicIslandView.swift — the island's face: one pill, live slots
+// DynamicIslandView.swift — the island's face: notch-shaped, live slots
 //
-// Rendered inside the service's floating panel. Every slot (time, date,
-// volume, cpu, memory, battery, network) is individually toggleable from the
-// island tab via plain UserDefaults keys; compact shows the first three
-// enabled slots as glyphs, expanded shows all of them. The service widens
-// the panel to match, so nothing clips.
+// Rendered inside the service's floating panel. Idle state is a plain
+// black slab matching the hardware notch — no content, no shadow, so it
+// blends in as "the original notch". Tapping expands the slab to show
+// every enabled slot (time, date, weather, volume, cpu, memory, battery,
+// network) with values; each slot is individually toggleable from the
+// island tab via plain UserDefaults keys, and the service widens the
+// panel to match, so nothing clips.
 
 import SwiftUI
 
@@ -39,64 +41,18 @@ struct DynamicIslandFace: View {
         ZStack {
             Rectangle()
                 .fill(Color.black.opacity(0.92))
-                .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
+                // The real notch casts no shadow — only the expanded state
+                // floats above the menu bar and gets one.
+                .shadow(color: service.expanded ? .black.opacity(0.35) : .clear,
+                        radius: 6, y: 2)
 
             if service.expanded {
                 expandedContent
-            } else {
-                compactContent
             }
         }
         .contentShape(Rectangle())
         .onTapGesture { service.toggleExpanded() }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
-    }
-
-    // MARK: - Compact: at most three glyphs (clock spelled out, rest icons)
-
-    private var compactContent: some View {
-        HStack(spacing: 10) {
-            ForEach(Array(enabledSlots.prefix(3).enumerated()), id: \.offset) { _, slot in
-                compactSlot(slot)
-            }
-        }
-        .padding(.horizontal, 16)
-    }
-
-    @ViewBuilder
-    private func compactSlot(_ slot: IslandSlot) -> some View {
-        switch slot {
-        case .time:
-            Text(Self.timeFormatter.string(from: service.now))
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundColor(.white)
-        case .date:
-            Image(systemName: "calendar")
-                .font(.system(size: 11))
-                .foregroundColor(.pink)
-        case .weather:
-            Image(systemName: IslandWeatherService.symbol(for: service.weatherCode ?? 3))
-                .font(.system(size: 11))
-                .foregroundColor(.cyan)
-        case .volume:
-            Image(systemName: service.volumeMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                .font(.system(size: 11))
-                .foregroundColor(service.volumeMuted ? .orange : .white)
-        case .cpu:
-            Image(systemName: "cpu.fill")
-                .font(.system(size: 11))
-                .foregroundColor(cpuColor)
-        case .memory:
-            Image(systemName: "memorychip.fill")
-                .font(.system(size: 11))
-                .foregroundColor(.purple)
-        case .battery:
-            batteryGlyph
-        case .network:
-            Image(systemName: "arrow.down")
-                .font(.system(size: 11))
-                .foregroundColor(.teal)
-        }
     }
 
     // MARK: - Expanded: every enabled slot with its value
@@ -185,21 +141,6 @@ struct DynamicIslandFace: View {
         case ..<50: return .green
         case ..<80: return .orange
         default: return .red
-        }
-    }
-
-    private var batteryGlyph: some View {
-        Image(systemName: batteryIcon)
-            .font(.system(size: 12))
-            .foregroundColor(service.batteryPercent < 20 ? .red : .green)
-    }
-
-    private var batteryIcon: String {
-        switch service.batteryPercent {
-        case ..<20: return "battery.0percent"
-        case ..<50: return "battery.25percent"
-        case ..<80: return "battery.50percent"
-        default: return "battery.100percent"
         }
     }
 
