@@ -15,17 +15,20 @@ struct DynamicIslandFace: View {
     // Owns the music controller reactively — without observing it, the
     // face would only refresh track changes on the 1s metric tick.
     @ObservedObject var music: MusicControllerService
+    // Calendar next-event slot: observed so a fresh reading repaints it.
+    @ObservedObject var calendar: CalendarService
     @AppStorage(DefaultsKey.islandShowTime.rawValue) private var showTime = true
     @AppStorage(DefaultsKey.islandShowDate.rawValue) private var showDate = false
     @AppStorage(DefaultsKey.islandShowWeather.rawValue) private var showWeather = false
     @AppStorage(DefaultsKey.islandShowMusic.rawValue) private var showMusic = false
+    @AppStorage(DefaultsKey.islandShowNextEvent.rawValue) private var showNextEvent = false
     @AppStorage(DefaultsKey.islandShowVolume.rawValue) private var showVolume = false
     @AppStorage(DefaultsKey.islandShowCPU.rawValue) private var showCPU = true
     @AppStorage(DefaultsKey.islandShowMemory.rawValue) private var showMemory = true
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, weather, music, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case time, date, weather, music, nextEvent, volume, cpu, memory, battery, network }
 
     init(service: DynamicIslandService) {
         self.service = service
@@ -33,6 +36,7 @@ struct DynamicIslandFace: View {
         // may run without it, so fall back to a throwaway instance.
         _music = ObservedObject(wrappedValue: MusicControllerService.shared
             ?? MusicControllerService(feature: .musicPlayPause))
+        _calendar = ObservedObject(wrappedValue: CalendarService.shared)
     }
 
     /// Fixed priority order — enabled slots surface left to right.
@@ -42,6 +46,7 @@ struct DynamicIslandFace: View {
         if showDate { slots.append(.date) }
         if showWeather, service.weatherTempC != nil { slots.append(.weather) }
         if showMusic, music.trackTitle != nil { slots.append(.music) }
+        if showNextEvent, calendar.nextEvent != nil { slots.append(.nextEvent) }
         if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
         if showCPU { slots.append(.cpu) }
         if showMemory { slots.append(.memory) }
@@ -151,6 +156,21 @@ struct DynamicIslandFace: View {
                     }
                 }
             }
+        case .nextEvent:
+            // Narrow slot: start time above, event title below.
+            if let reading = calendar.nextEvent {
+                VStack(spacing: 2) {
+                    Text(Self.eventTimeFormatter.string(from: reading.start))
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.white)
+                    Text(reading.title)
+                        .font(.system(size: 8))
+                        .foregroundColor(.white.opacity(0.75))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: 96)
+                }
+            }
         case .volume:
             VStack(spacing: 3) {
                 Image(systemName: volumeIcon)
@@ -238,6 +258,14 @@ struct DynamicIslandFace: View {
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.setLocalizedDateFormatFromTemplate("MdEEE") // e.g. 12/22 周一
+        return f
+    }()
+
+    // Next-event start time in the slot's narrow caption (HH:mm; the
+    // all-day marker "•" comes from CalendarService.timeCaption).
+    private static let eventTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
         return f
     }()
 }

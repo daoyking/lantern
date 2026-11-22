@@ -43,6 +43,7 @@ public enum DefaultsKey: String {
     case islandShowNetwork = "lantern_island_show_network"
     case islandShowWeather = "lantern_island_show_weather"
     case islandShowMusic = "lantern_island_show_music"
+    case islandShowNextEvent = "lantern_island_show_next_event"
     
     // MARK: - Panel State
     case panelVisible = "lantern_panel_visible"

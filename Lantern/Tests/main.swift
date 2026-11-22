@@ -3,6 +3,7 @@
 // Mirrors the XCTest cases so logic can be verified in this environment.
 
 import Foundation
+import EventKit
 
 // Tiny assertion harness
 struct Check {
@@ -516,6 +517,71 @@ Check.that(!UserDefaults.standard.bool(forKey: DefaultsKey.islandShowMusic.rawVa
            "音乐槽 toggle OFF 应写入 false")
 runtime.unregister(.dynamicIslandShowMusic)
 UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowMusic.rawValue)
+
+// ▶25 日历槽：next-event 选择纯函数 + 槽位接线（EventKit 只读，TCC 由用户驱动）
+do {
+    print("▶25 日历（next-event）")
+    // Build real EKEvents against a throwaway store — title/start/allDay are writable.
+    let store = EKEventStore()
+    let now = Date()
+    func ev(_ title: String?, _ start: Date, allDay: Bool = false) -> EKEvent {
+        let e = EKEvent(eventStore: store)
+        e.title = title
+        e.startDate = start
+        e.endDate = start.addingTimeInterval(3600)
+        e.isAllDay = allDay
+        return e
+    }
+
+    let cal = Calendar.current
+    // 1. earliest event wins
+    let a = ev("早会", now.addingTimeInterval(7200))
+    let b = ev("晚些", now.addingTimeInterval(10800))
+    let picked = CalendarService.nextEvent(from: [b, a], after: now, calendar: cal)
+    Check.that(picked?.title == "早会", "应选中最早的事件")
+    Check.that(picked?.allDay == false, "普通事件 allDay 应为 false")
+    // 2. all-day events surface with the allDay flag (sorted by start)
+    let allDay = ev("全天假", now.addingTimeInterval(-3600), allDay: true)
+    let picked2 = CalendarService.nextEvent(from: [b, allDay], after: now, calendar: cal)
+    Check.that(picked2?.allDay == true, "全天事件应标记 allDay")
+    // 3. same-day started-in-past event still counts (isDate inSameDayAs)
+    let earlierToday = ev("今早已开始", now.addingTimeInterval(-1800))
+    let picked3 = CalendarService.nextEvent(from: [earlierToday], after: now, calendar: cal)
+    Check.that(picked3?.title == "今早已开始", "今天已开始的事件仍在窗口内")
+    // 4. empty list → nil
+    Check.that(CalendarService.nextEvent(from: [], after: now, calendar: cal) == nil,
+               "无事件应返回 nil")
+    // 5. time caption: normal → HH:mm zero-padded; all-day → bullet
+    if let reading = picked {
+        let caption = CalendarService.timeCaption(for: reading, calendar: cal)
+        Check.that(caption.count == 5 && caption.contains(":"), "时间题注应为 HH:mm 形式: \(caption)")
+    }
+    let bullet = CalendarService.timeCaption(
+        for: CalendarService.Reading(title: "x", start: now, allDay: true), calendar: cal)
+    Check.that(bullet == "•", "全天事件题注应为圆点")
+    // 6. feature wiring
+    Check.that(AppFeature.dynamicIslandShowNextEvent.group == .dynamicIsland,
+               "下一日程开关应属于 dynamicIsland 组")
+    Check.that(!FeatureCatalog.shared.metadata(for: .dynamicIslandShowNextEvent).isAction,
+               "下一日程开关应为状态型")
+    if runtime.activeFeatures.contains(.dynamicIslandShowNextEvent) { runtime.stop(.dynamicIslandShowNextEvent) }
+    runtime.register(.dynamicIslandShowNextEvent, service: PreferenceToggleService(
+        feature: .dynamicIslandShowNextEvent,
+        on: { UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowNextEvent.rawValue) },
+        off: { UserDefaults.standard.set(false, forKey: DefaultsKey.islandShowNextEvent.rawValue) }
+    ), binding: {})
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowNextEvent.rawValue)
+    Check.that(DynamicIslandService.slotEnabled(.islandShowNextEvent, defaultIfUnset: false) == false,
+               "下一日程槽未设置时应默认关")
+    runtime.toggle(.dynamicIslandShowNextEvent)
+    Check.that(UserDefaults.standard.bool(forKey: DefaultsKey.islandShowNextEvent.rawValue),
+               "下一日程槽 toggle ON 应写入 true")
+    runtime.toggle(.dynamicIslandShowNextEvent)
+    Check.that(!UserDefaults.standard.bool(forKey: DefaultsKey.islandShowNextEvent.rawValue),
+               "下一日程槽 toggle OFF 应写入 false")
+    runtime.unregister(.dynamicIslandShowNextEvent)
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.islandShowNextEvent.rawValue)
+}
 
 cleanFeaturePrefs()
 Check.finish()

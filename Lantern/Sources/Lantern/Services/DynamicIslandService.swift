@@ -73,6 +73,7 @@ public final class DynamicIslandService: BaseFeatureService {
         if Self.slotEnabled(.islandShowCPU, defaultIfUnset: true) { count += 1 }
         if Self.slotEnabled(.islandShowMemory, defaultIfUnset: true) { count += 1 }
         if Self.slotEnabled(.islandShowBattery, defaultIfUnset: true), batteryPercent >= 0 { count += 1 }
+        if calendarHasEvent { count += 1 }
         if Self.slotEnabled(.islandShowNetwork, defaultIfUnset: true) { count += 1 }
         return count
     }
@@ -91,6 +92,10 @@ public final class DynamicIslandService: BaseFeatureService {
     /// the face hides the slot then.
     @Published public private(set) var weatherTempC: Double?
     @Published public private(set) var weatherCode: Int?
+
+    /// Next-event slot presence — mirrors CalendarService so the expanded
+    /// panel reserves width for the cell only when a reading actually exists.
+    @Published public private(set) var calendarHasEvent: Bool = false
     /// Refreshed every tick so clock/date slots re-render.
     @Published public private(set) var now: Date = Date()
 
@@ -122,6 +127,7 @@ public final class DynamicIslandService: BaseFeatureService {
         timer?.invalidate()
         timer = nil
         weather.setRunning(false)
+        CalendarService.shared.setRunning(false)
         panel?.orderOut(nil)
     }
 
@@ -221,6 +227,16 @@ public final class DynamicIslandService: BaseFeatureService {
         } else {
             MusicControllerService.shared?.setRunning(false)
         }
+        // Next-event slot: run the calendar poller while the slot is on;
+        // mirror whether a reading exists so the panel width matches.
+        let wantCalendar = Self.slotEnabled(.islandShowNextEvent, defaultIfUnset: false)
+        if wantCalendar {
+            CalendarService.shared.setRunning(true)
+            CalendarService.shared.refresh()
+        } else {
+            CalendarService.shared.setRunning(false)
+        }
+        calendarHasEvent = wantCalendar && CalendarService.shared.nextEvent != nil
         now = Date()
     }
 }

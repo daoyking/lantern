@@ -366,6 +366,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (AppFeature.dynamicIslandShowNetwork, DefaultsKey.islandShowNetwork, true),
             (AppFeature.dynamicIslandShowWeather, DefaultsKey.islandShowWeather, false),
             (AppFeature.dynamicIslandShowMusic, DefaultsKey.islandShowMusic, false),
+            (AppFeature.dynamicIslandShowNextEvent, DefaultsKey.islandShowNextEvent, false),
         ] {
             runtime.register(feature, service: PreferenceToggleService(
                 feature: feature,

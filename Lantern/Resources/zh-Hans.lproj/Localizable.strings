@@ -254,3 +254,6 @@
 "feature.dynamicIslandShowMusic.name" = "灵动岛：音乐";
 "feature.dynamicIslandShowMusic.desc" = "在悬浮岛显示正在播放的音乐";
 "island.music" = "音乐";
+"feature.dynamicIslandShowNextEvent.name" = "灵动岛：下一日程";
+"feature.dynamicIslandShowNextEvent.desc" = "在悬浮岛显示下一个日历日程";
+"island.nextEvent" = "日程";

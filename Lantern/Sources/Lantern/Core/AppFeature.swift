@@ -69,6 +69,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case dynamicIslandShowNetwork = "dynamicIslandShowNetwork"
     case dynamicIslandShowWeather = "dynamicIslandShowWeather"
     case dynamicIslandShowMusic = "dynamicIslandShowMusic"
+    case dynamicIslandShowNextEvent = "dynamicIslandShowNextEvent"
 
     /// Unique ID for SwiftUI list identification
     public var id: String { rawValue }
@@ -98,7 +99,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
              .dynamicIslandShowMemory, .dynamicIslandShowNetwork, .dynamicIslandShowWeather,
-             .dynamicIslandShowMusic:
+             .dynamicIslandShowMusic, .dynamicIslandShowNextEvent:
             return .dynamicIsland
         }
     }
@@ -137,6 +138,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .musicNextTrack: return localized("name", "Next Track")
         case .musicPrevTrack: return localized("name", "Previous Track")
         case .dynamicIslandShowMusic: return localized("name", "Island: Music")
+        case .dynamicIslandShowNextEvent: return localized("name", "Island: Next Event")
         case .cpuMonitor: return localized("name", "CPU Monitor")
         case .gpuMonitor: return localized("name", "GPU Monitor")
         case .memoryMonitor: return localized("name", "Memory Monitor")
@@ -205,6 +207,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .dynamicIslandShowNetwork: return localized("desc", "Show network throughput in the island")
         case .dynamicIslandShowWeather: return localized("desc", "Show local weather in the island (auto location)")
         case .dynamicIslandShowMusic: return localized("desc", "Show the playing track in the island")
+        case .dynamicIslandShowNextEvent: return localized("desc", "Show the next calendar event in the island")
         case .musicPlayPause: return localized("desc", "Send the system play/pause media key")
         case .musicNextTrack: return localized("desc", "Send the next-track media key")
         case .musicPrevTrack: return localized("desc", "Send the previous-track media key")

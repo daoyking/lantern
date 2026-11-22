@@ -31,6 +31,7 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Services/DynamicIslandService.swift \
     Sources/Lantern/Services/IslandWeatherService.swift \
     Sources/Lantern/Services/MusicControllerService.swift \
+    Sources/Lantern/Services/CalendarService.swift \
     Sources/Lantern/UI/DynamicIslandView.swift \
     Tests/main.swift
 

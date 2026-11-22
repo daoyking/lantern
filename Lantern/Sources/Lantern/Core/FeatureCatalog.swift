@@ -403,6 +403,11 @@ public final class FeatureCatalog {
             displayPriority: 10,
             implementation: .native
         )
+        map[.dynamicIslandShowNextEvent] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 11,
+            implementation: .native
+        )
 
         return map
     }
