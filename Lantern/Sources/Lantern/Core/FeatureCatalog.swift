@@ -376,6 +376,13 @@ public final class FeatureCatalog {
             implementation: .native,
             isAction: true
         )
+        // Quick launch: preset one-tap app launchers.
+        map[.launchSafari] = FeatureMetadata(displayPriority: 12, implementation: .native, isAction: true)
+        map[.launchTerminal] = FeatureMetadata(displayPriority: 13, implementation: .native, isAction: true)
+        map[.launchNotes] = FeatureMetadata(displayPriority: 14, implementation: .native, isAction: true)
+        map[.launchCalculator] = FeatureMetadata(displayPriority: 15, implementation: .native, isAction: true)
+        map[.launchCalendar] = FeatureMetadata(displayPriority: 16, implementation: .native, isAction: true)
+        map[.launchMail] = FeatureMetadata(displayPriority: 17, implementation: .native, isAction: true)
         // Focus session: toggle starts a 25-minute block; DND posted
         // best-effort via the legacy distributed notification.
         map[.focusMode] = FeatureMetadata(

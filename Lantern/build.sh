@@ -88,6 +88,7 @@ build() {
         Sources/Lantern/Services/EyeBreakService.swift
         Sources/Lantern/Services/QuickTimerService.swift
         Sources/Lantern/Services/FocusService.swift
+        Sources/Lantern/Services/QuickLaunchService.swift
         Sources/Lantern/UI/EyeBreakOverlay.swift
         Sources/Lantern/UI/TimerDoneCard.swift
     Sources/Lantern/UI/FocusDoneCard.swift

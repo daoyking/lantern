@@ -353,6 +353,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Focus session — toggle runs a 25-minute block on the island.
         runtime.register(.focusMode, service: FocusService.shared, binding: {})
+
+        // Quick launch — six preset app launch actions share one service.
+        runtime.register(.launchSafari, service: QuickLaunchService.shared) {
+            QuickLaunchService.launch(.launchSafari)
+        }
+        runtime.register(.launchTerminal, service: QuickLaunchService.shared) {
+            QuickLaunchService.launch(.launchTerminal)
+        }
+        runtime.register(.launchNotes, service: QuickLaunchService.shared) {
+            QuickLaunchService.launch(.launchNotes)
+        }
+        runtime.register(.launchCalculator, service: QuickLaunchService.shared) {
+            QuickLaunchService.launch(.launchCalculator)
+        }
+        runtime.register(.launchCalendar, service: QuickLaunchService.shared) {
+            QuickLaunchService.launch(.launchCalendar)
+        }
+        runtime.register(.launchMail, service: QuickLaunchService.shared) {
+            QuickLaunchService.launch(.launchMail)
+        }
         runtime.register(.timerStart5, service: QuickTimerService.shared) {
             FeatureRuntime.shared.activateIfNeeded(.quickTimer)
             QuickTimerService.shared.start(minutes: 5)

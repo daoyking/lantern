@@ -31,6 +31,12 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case inputDeviceSelect = "inputDeviceSelect"
     case audioToggle = "audioToggle"
     case notificationSound = "notificationSound"
+    case launchSafari = "launchSafari"
+    case launchTerminal = "launchTerminal"
+    case launchNotes = "launchNotes"
+    case launchCalculator = "launchCalculator"
+    case launchCalendar = "launchCalendar"
+    case launchMail = "launchMail"
     case timerStart5 = "timerStart5"
     case timerStart10 = "timerStart10"
     case timerStart25 = "timerStart25"
@@ -91,6 +97,9 @@ public enum AppFeature: String, CaseIterable, Identifiable {
             return .mouseKeyboard
         case .clipboardHistory, .pasteAsPlainText, .syncClipboardAcrossDevices:
             return .clipboard
+        case .launchSafari, .launchTerminal, .launchNotes,
+             .launchCalculator, .launchCalendar, .launchMail:
+            return .tools
         case .timerStart5, .timerStart10, .timerStart25:
             return .tools
         case .volumeMixer, .inputDeviceSelect, .audioToggle, .notificationSound,
@@ -158,6 +167,12 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .fileShredder: return localized("name", "File Shredder")
         case .colorPicker: return localized("name", "Color Picker")
         case .eyeBreak: return localized("name", "Eye Break (20-20-20)")
+        case .launchSafari: return localized("name", "Open Safari")
+        case .launchTerminal: return localized("name", "Open Terminal")
+        case .launchNotes: return localized("name", "Open Notes")
+        case .launchCalculator: return localized("name", "Open Calculator")
+        case .launchCalendar: return localized("name", "Open Calendar")
+        case .launchMail: return localized("name", "Open Mail")
         case .quickTimer: return localized("name", "Quick Timer")
         case .focusMode: return localized("name", "Focus Session")
         case .timerStart5: return localized("name", "Timer 5 min")
@@ -211,6 +226,12 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .processKiller: return localized("desc", "Choose a running app and terminate it")
         case .fileShredder: return localized("desc", "Overwrite and delete files you select")
         case .eyeBreak: return localized("desc", "Every 20 minutes, dim the screen for a 20-second eye break")
+        case .launchSafari: return localized("desc", "Launch the Safari web browser")
+        case .launchTerminal: return localized("desc", "Launch the Terminal app")
+        case .launchNotes: return localized("desc", "Launch the Notes app")
+        case .launchCalculator: return localized("desc", "Launch the Calculator app")
+        case .launchCalendar: return localized("desc", "Launch the Calendar app")
+        case .launchMail: return localized("desc", "Launch the Mail app")
         case .quickTimer: return localized("desc", "Enable quick timers; the countdown shows on the island")
         case .focusMode: return localized("desc", "25-minute focus session on the island; tries to mute notifications (legacy hook)")
         case .timerStart5: return localized("desc", "Start a 5-minute timer (tap again to cancel)")

@@ -703,5 +703,28 @@ do {
     UserDefaults.standard.removeObject(forKey: key)
 }
 
+// ▶29 快捷启动：六预设 LaunchServices 解析/接线
+do {
+    print("▶29 快捷启动")
+    // Every preset resolves to an installed app on a stock macOS.
+    for feature in [AppFeature.launchSafari, .launchTerminal, .launchNotes,
+                    .launchCalculator, .launchCalendar, .launchMail] {
+        Check.that(QuickLaunchService.appURL(for: feature) != nil,
+                   "\(feature.rawValue) 应能通过 LaunchServices 解析")
+    }
+    Check.that(QuickLaunchService.appURL(for: .keepAwake) == nil,
+               "非预设特征应返回 nil")
+    // Wiring: tools group, action type, priorities
+    let launchFeatures: [AppFeature] = [.launchSafari, .launchTerminal, .launchNotes,
+                                        .launchCalculator, .launchCalendar, .launchMail]
+    Check.that(launchFeatures.allSatisfy { $0.group == .tools },
+               "快捷启动应全部属于 tools 组")
+    Check.that(launchFeatures.allSatisfy { FeatureCatalog.shared.metadata(for: $0).isAction },
+               "快捷启动应全部为动作型")
+    Check.that(FeatureCatalog.shared.metadata(for: .launchSafari).displayPriority == 12 &&
+               FeatureCatalog.shared.metadata(for: .launchMail).displayPriority == 17,
+               "快捷启动优先级应递增")
+}
+
 cleanFeaturePrefs()
 Check.finish()

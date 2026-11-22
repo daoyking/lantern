@@ -279,3 +279,15 @@
 "island.focus" = "专注";
 "focusDone.title" = "🎯 专注完成";
 "focusDone.hint" = "专注 25 分钟，干得漂亮";
+"feature.launchSafari.name" = "打开 Safari";
+"feature.launchSafari.desc" = "启动 Safari 浏览器";
+"feature.launchTerminal.name" = "打开终端";
+"feature.launchTerminal.desc" = "启动终端应用";
+"feature.launchNotes.name" = "打开备忘录";
+"feature.launchNotes.desc" = "启动备忘录应用";
+"feature.launchCalculator.name" = "打开计算器";
+"feature.launchCalculator.desc" = "启动计算器应用";
+"feature.launchCalendar.name" = "打开日历";
+"feature.launchCalendar.desc" = "启动日历应用";
+"feature.launchMail.name" = "打开邮件";
+"feature.launchMail.desc" = "启动邮件应用";
