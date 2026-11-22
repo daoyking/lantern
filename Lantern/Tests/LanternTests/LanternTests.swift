@@ -93,6 +93,25 @@ final class LanternTests: XCTestCase {
         }
     }
 
+    /// The island hid the battery because macOS 27 renamed the IOKit.ps keys
+    /// and reshaped the blob. The parser must accept BOTH spellings.
+    func testBatteryParserUnderstandsBothMacOSShapes() {
+        let modern: [String: Any] = [
+            "Is Present": true, "Current Capacity": 80, "Max Capacity": 100,
+            "Is Charging": false, "Power Source State": "AC Power",
+        ]
+        let legacy: [String: Any] = [
+            "Is Present": true, "CurrentCapacity": 55, "MaxCapacity": 100,
+            "Power Source State": "AC Power",
+        ]
+        XCTAssertEqual(MetricMath.battery(from: modern)?.percent, 80.0)
+        XCTAssertEqual(MetricMath.battery(from: modern)?.charging, false)
+        XCTAssertEqual(MetricMath.battery(from: legacy)?.percent, 55.0)
+        XCTAssertEqual(MetricMath.battery(from: legacy)?.charging, true)
+        XCTAssertNil(MetricMath.battery(from: ["CurrentCapacity": 50]))
+        XCTAssertNil(MetricMath.battery(from: ["CurrentCapacity": 50, "MaxCapacity": 0]))
+    }
+
     /// Specifically pin the three Clipboard features from the screenshot.
     func testClipboardGroupSwitchesAreLive() {
         let clipboardFeatures: [AppFeature] = [

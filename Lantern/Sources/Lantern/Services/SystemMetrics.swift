@@ -46,6 +46,24 @@ public struct MetricSnapshot {
 // MARK: - Pure math helpers (unit-testable, no I/O)
 
 public enum MetricMath {
+    /// Extract (percent, charging) from one power-source dictionary.
+    /// Handles BOTH macOS shapes:
+    ///   - macOS 27+: keys renamed with spaces — "Current Capacity", "Max Capacity",
+    ///     plus explicit "Is Charging" boolean.
+    ///   - pre-27 legacy: "CurrentCapacity", "MaxCapacity", charging derived from
+    ///     "Power Source State" == "AC Power".
+    /// Returns nil for sources without usable capacity values (UPS, etc.).
+    public static func battery(from source: [String: Any]) -> (percent: Double, charging: Bool)? {
+        guard let current = (source["Current Capacity"] ?? source["CurrentCapacity"]) as? Int,
+              let maximum = (source["Max Capacity"] ?? source["MaxCapacity"]) as? Int,
+              maximum > 0 else { return nil }
+        let charging = (source["Is Charging"] as? Bool)
+            ?? ((source["Power Source State"] as? String) == "AC Power")
+        // Multiply before dividing: 55 * 100 / 100 is exact in IEEE754,
+        // while 55 / 100 * 100 lands on 55.000000000000007.
+        return (Double(current) * 100.0 / Double(maximum), charging)
+    }
+
     /// Convert two host_cpu_load_info tick samples into a 0–100 utilisation.
     /// `ticks` order is (user, system, idle, nice).
     public static func cpuPercent(
@@ -197,21 +215,25 @@ public final class SystemMetrics {
     // MARK: Battery — IOPMPowerSource
 
     private func readBattery() -> (percent: Double, charging: Bool) {
-        // IOPSCopyPowerSourcesInfo returns a CFDictionary whose "Power Sources"
-        // key holds an array of per-source dictionaries. Bridge through
-        // Foundation to avoid fragile CF casts; IOPSGetPowerSourceArray is not
-        // exported by this SDK's IOKit.ps module.
-        guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() as? NSDictionary,
-              let sources = blob["Power Sources"] as? NSArray else {
+        guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else {
+            return (-1, false)
+        }
+        // macOS 27 changed the API shape: IOPSCopyPowerSourcesInfo now returns
+        // the sources ARRAY directly. Pre-27 returned a dictionary whose
+        // "Power Sources" member held the array. Handle both.
+        let sources: [NSDictionary]
+        if blob is NSArray {
+            sources = ((blob as! NSArray) as? [NSDictionary]) ?? []
+        } else if let inner = (blob as? NSDictionary)?["Power Sources"] as? NSArray {
+            sources = (inner as? [NSDictionary]) ?? []
+        } else {
             return (-1, false) // desktop / no battery
         }
-        for case let source as NSDictionary in sources {
-            guard let current = source[kIOPSCurrentCapacityKey as String] as? Int,
-                  let maximum = source[kIOPSMaxCapacityKey as String] as? Int,
-                  maximum > 0 else { continue }
-            let state = source[kIOPSPowerSourceStateKey as String] as? String ?? ""
-            let charging = (state == (kIOPSACPowerValue as String))
-            return (Double(current) / Double(maximum) * 100.0, charging)
+        for dict in sources {
+            guard let d = dict as? [String: Any],
+                  d["Is Present"] as? Bool ?? true, // absent flag means present
+                  let result = MetricMath.battery(from: d) else { continue }
+            return result
         }
         return (-1, false)
     }

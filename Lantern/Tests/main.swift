@@ -326,4 +326,33 @@ if let gated = AppFeature.allCases.first(where: {
 }
 
 cleanFeaturePrefs()
+
+// ▶21 电池解析：同时理解 macOS 27+ 带空格键名与旧版键名（岛电池缺失回归）
+print("▶ 21. 电池解析双形状（macOS 27 数组新形状 + 旧字典形状）")
+let modernSource: [String: Any] = [
+    "Is Present": true, "Current Capacity": 80, "Max Capacity": 100,
+    "Is Charging": false, "Power Source State": "AC Power",
+]
+let legacySource: [String: Any] = [
+    "Is Present": true, "CurrentCapacity": 55, "MaxCapacity": 100,
+    "Power Source State": "AC Power",
+]
+if let modern = MetricMath.battery(from: modernSource) {
+    Check.that(modern.percent == 80.0, "新形状 80/100 → 80%")
+    Check.that(modern.charging == false, "新形状 Is Charging=false → 未充电")
+} else {
+    Check.that(false, "新形状应解析成功")
+}
+if let legacy = MetricMath.battery(from: legacySource) {
+    Check.that(legacy.percent == 55.0, "旧形状 55/100 → 55%")
+    Check.that(legacy.charging == true, "旧形状 AC Power → 视为充电中")
+} else {
+    Check.that(false, "旧形状应解析成功")
+}
+Check.that(MetricMath.battery(from: ["CurrentCapacity": 50]) == nil, "缺 MaxCapacity 应拒绝")
+Check.that(MetricMath.battery(from: ["CurrentCapacity": 50, "MaxCapacity": 0]) == nil, "MaxCapacity=0 应拒绝")
+Check.that(MetricMath.battery(from: ["Is Present": false, "Current Capacity": 80, "Max Capacity": 100])?.percent == 80.0,
+           "Is Present 由调用方过滤，解析只看容量")
+
+cleanFeaturePrefs()
 Check.finish()
