@@ -1,173 +1,115 @@
-// DynamicIslandView.swift — Dynamic Island preview component (macOS 15+)
+// DynamicIslandView.swift — the island's face: one pill, live metrics
+//
+// Rendered inside the service's floating panel. Compact shows CPU + battery;
+// clicking morphs to expanded, adding memory and network. Content switches
+// (island_show_cpu / island_show_battery) are plain UserDefaults so the
+// panel tab can toggle them without touching window lifecycle.
 
 import SwiftUI
 
-/// Preview of the simulated Dynamic Island showing system metrics
-struct DynamicIslandView: View {
-    @StateObject private var service: DynamicIslandService
-    init() {
-        _service = StateObject(wrappedValue: DynamicIslandService(feature: .dynamicIslandEnabled))
-    }
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Text(L("island.preview", "Dynamic Island Preview"))
-                .font(.headline)
-            
-            // Compact mode
-            HStack {
-                Text(L("island.compact", "Compact:"))
-                    .frame(width: 60, alignment: .leading)
-                DynamicIslandCompact(service: service)
-            }
-            
-            // Expanded mode
-            HStack {
-                Text(L("island.expanded", "Expanded:"))
-                    .frame(width: 60, alignment: .leading)
-                DynamicIslandExpanded(service: service)
-            }
-            
-            // Controls
-            HStack(spacing: 12) {
-                Button(L("island.toggleMode", "Toggle Mode")) {
-                    service.toggleMode()
-                }
-                .buttonStyle(.bordered)
-                
-                Button(L("island.setCPU", "Set CPU")) {
-                    service.setContent(.cpuUsage)
-                }
-                .buttonStyle(.bordered)
-                
-                Button(L("island.setMemory", "Set Memory")) {
-                    service.setContent(.memoryUsage)
-                }
-                .buttonStyle(.bordered)
-            }
-            
-            Spacer()
-        }
-        .padding()
-        .onAppear {
-            service.updateMetrics(cpu: 45, memory: 62, battery: 88, volume: 50)
-        }
-    }
-}
+struct DynamicIslandFace: View {
+    @ObservedObject var service: DynamicIslandService
+    @AppStorage(DefaultsKey.islandShowCPU.rawValue) private var showCPU = true
+    @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
 
-// MARK: - Compact Island
-
-struct DynamicIslandCompact: View {
-    let service: DynamicIslandService
-    
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.black)
-                .frame(width: 120, height: 38)
-            
-            if let content = service.activeContent {
-                HStack {
-                    Image(systemName: content.icon)
-                        .font(.system(size: 12))
-                        .foregroundColor(content.color)
-                    Text(isMetricFor(content))
-                        .font(.system(size: 11, weight: .medium))
+            Capsule()
+                .fill(Color.black.opacity(0.92))
+                .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
+
+            if service.expanded {
+                expandedContent
+            } else {
+                compactContent
+            }
+        }
+        .contentShape(Capsule())
+        .onTapGesture { service.toggleExpanded() }
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
+    }
+
+    // MARK: - Compact: icon + CPU, battery glyph on the right
+
+    private var compactContent: some View {
+        HStack(spacing: 10) {
+            if showCPU {
+                HStack(spacing: 4) {
+                    Image(systemName: "cpu.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(cpuColor)
+                    Text("\(Int(service.cpuPercent))%")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundColor(.white)
                 }
-            } else {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.green)
+            }
+            if showBattery, service.batteryPercent >= 0 {
+                batteryGlyph
             }
         }
+        .padding(.horizontal, 16)
     }
-    
-    private func isMetricFor(_ content: DynamicIslandService.IslandContent) -> String {
-        switch content {
-        case .cpuUsage: return "\(Int(service.cpuPercent))%"
-        case .memoryUsage: return "\(Int(service.memoryPercent))%"
-        case .batteryLevel: return "\(Int(service.batteryPercent))%"
-        case .volumeLevel: return "\(Int(service.volumePercent))%"
-        case .networkSpeed: return "+\(Int(service.networkUploadKBps))/−\(Int(service.networkDownloadKBps))"
-        }
-    }
-}
 
-// MARK: - Expanded Island
+    // MARK: - Expanded: labelled rows for every live metric
 
-struct DynamicIslandExpanded: View {
-    let service: DynamicIslandService
-    
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 22)
-                .fill(Color.black)
-                .frame(width: 220, height: 50)
-            
-            if let content = service.activeContent {
-                HStack(spacing: 12) {
-                    Image(systemName: content.icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(content.color)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L("island.content.\(content.rawValue)", content.rawValue))
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Text(metricValue(for: content))
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                }
-                .padding(.horizontal, 12)
-            } else {
-                HStack(spacing: 16) {
-                    MetricTile(icon: "cpu.fill", value: "\(Int(service.cpuPercent))%", color: .orange)
-                    Divider().frame(height: 20)
-                    MetricTile(icon: "memorychip.fill", value: "\(Int(service.memoryPercent))%", color: .purple)
-                }
-                .padding(.horizontal, 12)
+    private var expandedContent: some View {
+        HStack(spacing: 14) {
+            if showCPU {
+                metric(icon: "cpu.fill", color: cpuColor,
+                       label: L("island.cpu", "CPU"),
+                       value: "\(Int(service.cpuPercent))%")
             }
+            metric(icon: "memorychip.fill", color: .purple,
+                   label: L("island.memory", "Memory"),
+                   value: "\(Int(service.memoryPercent))%")
+            if showBattery, service.batteryPercent >= 0 {
+                metric(icon: "bolt.fill", color: .green,
+                       label: L("island.battery", "Battery"),
+                       value: "\(Int(service.batteryPercent))%")
+            }
+            metric(icon: "arrow.down", color: .teal,
+                   label: L("island.network", "Net"),
+                   value: String(format: "%.0fKB/s", service.networkDownKBps))
         }
+        .padding(.horizontal, 16)
     }
-    
-    private func metricValue(for content: DynamicIslandService.IslandContent) -> String {
-        switch content {
-        case .cpuUsage: return "\(Int(service.cpuPercent))%"
-        case .memoryUsage: return "\(Int(service.memoryPercent))%"
-        case .batteryLevel: return "\(Int(service.batteryPercent))%"
-        case .volumeLevel: return "\(Int(service.volumePercent))%"
-        case .networkSpeed: return "+\(Int(service.networkUploadKBps))k/s"
-        }
-    }
-}
 
-// MARK: - Helper Views
-
-private struct MetricTile: View {
-    let icon: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
+    private func metric(icon: String, color: Color, label: String, value: String) -> some View {
         VStack(spacing: 2) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(.system(size: 11))
                 .foregroundColor(color)
             Text(value)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 .foregroundColor(.white)
+            Text(label)
+                .font(.system(size: 8))
+                .foregroundColor(.white.opacity(0.55))
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var cpuColor: Color {
+        switch service.cpuPercent {
+        case ..<50: return .green
+        case ..<80: return .orange
+        default: return .red
+        }
+    }
+
+    private var batteryGlyph: some View {
+        Image(systemName: batteryIcon)
+            .font(.system(size: 12))
+            .foregroundColor(service.batteryPercent < 20 ? .red : .green)
+    }
+
+    private var batteryIcon: String {
+        switch service.batteryPercent {
+        case ..<20: return "battery.0percent"
+        case ..<50: return "battery.25percent"
+        case ..<80: return "battery.50percent"
+        default: return "battery.100percent"
         }
     }
 }
-
-// MARK: - Preview
-
-#if DEBUG
-#Preview {
-    DynamicIslandView()
-        .preferredColorScheme(.dark)
-        .frame(width: 400, height: 300)
-}
-#endif

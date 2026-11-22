@@ -193,11 +193,11 @@
 "feature.colorPicker.desc" = "拾取屏幕颜色并复制十六进制值";
 
 "feature.dynamicIslandEnabled.name" = "灵动岛";
-"feature.dynamicIslandEnabled.desc" = "启用灵动岛集成";
+"feature.dynamicIslandEnabled.desc" = "屏幕顶部悬浮岛，实时显示 CPU/内存/电池";
 "feature.dynamicIslandShowCPU.name" = "灵动岛：CPU";
-"feature.dynamicIslandShowCPU.desc" = "在灵动岛显示 CPU 数据";
+"feature.dynamicIslandShowCPU.desc" = "在悬浮岛显示 CPU 占用";
 "feature.dynamicIslandShowBattery.name" = "灵动岛：电池";
-"feature.dynamicIslandShowBattery.desc" = "在灵动岛显示电池状态";
+"feature.dynamicIslandShowBattery.desc" = "在悬浮岛显示电池状态";
 
 /* Clipboard history panel */
 "clipboard.history.title" = "剪贴板历史";
@@ -205,3 +205,9 @@
 "clipboard.history.hintOff" = "打开下方「剪贴板历史」开关开始记录";
 "clipboard.history.empty" = "在任意应用复制内容，会显示在这里";
 "clipboard.history.copyBack" = "复制回剪贴板";
+
+/* Island face */
+"island.cpu" = "CPU";
+"island.memory" = "内存";
+"island.battery" = "电池";
+"island.network" = "网络";

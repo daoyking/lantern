@@ -334,12 +334,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.shredFilesWithPanel()
         }
 
-        // Dynamic Island — real telemetry (macOS 15+ hardware gate in catalog).
-        if #available(macOS 15.0, *) {
-            runtime.register(.dynamicIslandEnabled, service: DynamicIslandService(feature: .dynamicIslandEnabled), binding: {})
-            runtime.register(.dynamicIslandShowCPU, service: DynamicIslandService(feature: .dynamicIslandShowCPU), binding: {})
-            runtime.register(.dynamicIslandShowBattery, service: DynamicIslandService(feature: .dynamicIslandShowBattery), binding: {})
-        }
+        // Dynamic Island — one service owns the floating window; the content
+        // switches are plain defaults toggles the island face observes.
+        runtime.register(.dynamicIslandEnabled,
+                         service: DynamicIslandService(feature: .dynamicIslandEnabled),
+                         binding: {})
+        runtime.register(.dynamicIslandShowCPU, service: PreferenceToggleService(
+            feature: .dynamicIslandShowCPU,
+            on: { UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowCPU.rawValue) },
+            off: { UserDefaults.standard.set(false, forKey: DefaultsKey.islandShowCPU.rawValue) }
+        ), binding: {})
+        runtime.register(.dynamicIslandShowBattery, service: PreferenceToggleService(
+            feature: .dynamicIslandShowBattery,
+            on: { UserDefaults.standard.set(true, forKey: DefaultsKey.islandShowBattery.rawValue) },
+            off: { UserDefaults.standard.set(false, forKey: DefaultsKey.islandShowBattery.rawValue) }
+        ), binding: {})
     }
     
     // MARK: - Tool actions

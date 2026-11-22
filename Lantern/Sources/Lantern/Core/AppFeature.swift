@@ -171,9 +171,9 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .processKiller: return localized("desc", "Choose a running app and terminate it")
         case .fileShredder: return localized("desc", "Overwrite and delete files you select")
         case .colorPicker: return localized("desc", "Pick an on-screen color and copy its hex")
-        case .dynamicIslandEnabled: return localized("desc", "Enable Dynamic Island integration")
-        case .dynamicIslandShowCPU: return localized("desc", "Show CPU stats in Dynamic Island")
-        case .dynamicIslandShowBattery: return localized("desc", "Show battery status in Dynamic Island")
+        case .dynamicIslandEnabled: return localized("desc", "Floating island at the top of the screen with live CPU / memory / battery")
+        case .dynamicIslandShowCPU: return localized("desc", "Show CPU stats in the island")
+        case .dynamicIslandShowBattery: return localized("desc", "Show battery status in the island")
         }
     }
 }

@@ -34,6 +34,8 @@ public enum DefaultsKey: String {
     
     // MARK: - Dynamic Island
     case islandAnimationEnabled = "lantern_island_animation_enabled"
+    case islandShowCPU = "lantern_island_show_cpu"
+    case islandShowBattery = "lantern_island_show_battery"
     
     // MARK: - Panel State
     case panelVisible = "lantern_panel_visible"

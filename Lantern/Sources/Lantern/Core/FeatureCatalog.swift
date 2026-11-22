@@ -348,25 +348,22 @@ public final class FeatureCatalog {
         )
 
         // ── Dynamic Island ─────────────────────────────────────────────
-        // macOS has no native Dynamic Island API — pure simulation with
-        // fabricated metrics.
+        // Real floating panel + live SystemMetrics telemetry — the honest
+        // kind of island (macOS has no native one, so we build our own).
         map[.dynamicIslandEnabled] = FeatureMetadata(
-            hardwareRequirement: .dynamicIslandOnly,
             installedByDefault: true,
             displayPriority: 1,
-            implementation: .simulated
+            implementation: .native
         )
         map[.dynamicIslandShowCPU] = FeatureMetadata(
-            hardwareRequirement: .dynamicIslandOnly,
             installedByDefault: true,
             displayPriority: 2,
-            implementation: .simulated
+            implementation: .native
         )
         map[.dynamicIslandShowBattery] = FeatureMetadata(
-            hardwareRequirement: .dynamicIslandOnly,
             installedByDefault: true,
             displayPriority: 3,
-            implementation: .simulated
+            implementation: .native
         )
 
         return map

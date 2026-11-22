@@ -184,9 +184,9 @@ Check.that(catalog.metadata(for: .doubleClickSpeed).implementation == .stub, "�
 Check.that(catalog.metadata(for: .cursorSize).implementation == .stub, "光标大小应诚实标注为降级")
 Check.that(catalog.metadata(for: .portControl).implementation == .stub, "端口管控需 root，应诚实标注")
 Check.that(catalog.metadata(for: .gpuMonitor).implementation == .stub, "GPU 利用率无公开 API，应诚实标注")
-// Dynamic Island 数据已接真实指标，但形态仍是模拟悬浮窗（macOS 无原生 API）
-Check.that(catalog.metadata(for: .dynamicIslandEnabled).implementation == .simulated,
-           "Dynamic Island 形态应保持 DEMO 标注")
+// Dynamic Island 已是真窗口 + 真指标：悬浮面板渲染 SystemMetrics 实时遥测
+Check.that(catalog.metadata(for: .dynamicIslandEnabled).implementation == .native,
+           "Dynamic Island 应为原生实现（真窗口+真数据）")
 
 print("▶ 16. 真实指标数学：CPU/网络/内存计算正确（极端边界）")
 // CPU：全 idle → 0%；全 active → 100%
