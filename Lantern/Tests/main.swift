@@ -4,6 +4,7 @@
 
 import CryptoKit
 import Foundation
+import AppKit
 import EventKit
 
 // Tiny assertion harness
@@ -1025,6 +1026,59 @@ do {
                FeatureCatalog.shared.metadata(for: .nearbyShare).implementation == .native &&
                !FeatureCatalog.shared.metadata(for: .nearbyShare).isAction,
                "nearbyShare 应为 clipboard 组状态型 native")
+}
+
+// ▶35 Sapphire 子集：锁屏小组件/系统音效/备忘录捕获
+do {
+    print("▶35 Sapphire subsets")
+
+    // 锁屏：公共通知名 + shielding 级别 + 组归属
+    Check.that(LockScreenWidgetsService.lockedNotification == "com.apple.screenIsLocked" &&
+               LockScreenWidgetsService.unlockedNotification == "com.apple.screenIsUnlocked",
+               "锁屏通知名应为系统公共通知")
+    Check.that(AppFeature.lockScreenWidgets.group == .tools &&
+               !FeatureCatalog.shared.metadata(for: .lockScreenWidgets).isAction &&
+               FeatureCatalog.shared.metadata(for: .lockScreenWidgets).implementation == .native,
+               "lockScreenWidgets 应为 tools 状态型 native")
+
+    // 系统音效：12 个经典名，全部能被 NSSound 解析
+    Check.that(SystemSoundsService.soundNames.count == 12 &&
+               SystemSoundsService.soundNames.allSatisfy { NSSound(named: $0) != nil },
+               "声音表应 12 项且全部可解析为 NSSound")
+    Check.that(AppFeature.systemSounds.group == .tools &&
+               !FeatureCatalog.shared.metadata(for: .systemSounds).isAction,
+               "systemSounds 应为 tools 状态型")
+
+    // 音效服务：播放把 lastPlayed 置位；未知名被拒
+    let sounds = SystemSoundsService.shared
+    try? sounds.start()
+    sounds.play("Glass")
+    Check.that(sounds.lastPlayed == "Glass", "play(Glass) 应置位 lastPlayed")
+    sounds.play("NoSuchSound")
+    Check.that(sounds.lastPlayed == "Glass", "未知音效应被拒绝且不改动 lastPlayed")
+    try? sounds.stop()
+    Check.that(sounds.lastPlayed == nil, "stop 应清空 lastPlayed")
+
+    // 备忘录脚本：转义 + 标题
+    let script = NotesCaptureService.script(noteTitle: "T\"A\\B", body: "L1\nL2 \"q\" \\ end")
+    Check.that(script.contains("make new note") &&
+               script.contains("name:\"T\\\"A\\\\B\"") &&
+               script.contains("body:\"L1\\nL2 \\\"q\\\" \\\\ end\""),
+               "脚本应对引号/反斜杠/换行转义")
+    Check.that(NotesCaptureService.script(noteTitle: "x", body: "a\nb").contains("\r") == false,
+               "脚本不应残留 \\r")
+    Check.that(NotesCaptureService.fallbackTitle(for: Date(), formatter: NotesCaptureService.titleFormatter)
+                   .hasPrefix("Lantern · "),
+               "fallback 标题应带 Lantern 前缀")
+    Check.that(AppFeature.notesCapture.group == .tools &&
+               FeatureCatalog.shared.metadata(for: .notesCapture).isAction &&
+               FeatureCatalog.shared.metadata(for: .notesCapture).implementation == .native,
+               "notesCapture 应为 tools 动作型 native")
+
+    // 快照格式：Snapshot 纯值可比较（服务 tick 走真系统，仅验证结构成立）
+    let snap = LockScreenWidgetsService.Snapshot(cpu: 12, memory: 55, networkKBps: 8, battery: 80, charging: false)
+    Check.that(snap == LockScreenWidgetsService.Snapshot(cpu: 12, memory: 55, networkKBps: 8, battery: 80, charging: false),
+               "Snapshot 应可等值比较")
 }
 
 cleanFeaturePrefs()

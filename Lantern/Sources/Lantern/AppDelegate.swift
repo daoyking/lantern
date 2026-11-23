@@ -361,6 +361,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         runtime.register(.nearbyShare, service: NearbyShareService.shared, binding: {})
         runtime.register(.geminiLiveTalk, service: GeminiVoiceService.shared, binding: {})
 
+        // Sapphire subsets — lock widgets, sound tester, notes capture.
+        runtime.register(.lockScreenWidgets, service: LockScreenWidgetsService.shared, binding: {})
+        runtime.register(.systemSounds, service: SystemSoundsService.shared, binding: {})
+        runtime.register(.notesCapture, service: NotesCaptureService.shared) {
+            NotesCaptureService.shared.capture()
+        }
+
         // Bluetooth radar — toggle runs a CoreBluetooth nearby scan.
         runtime.register(.bluetoothRadar, service: BluetoothRadarService.shared, binding: {})
 

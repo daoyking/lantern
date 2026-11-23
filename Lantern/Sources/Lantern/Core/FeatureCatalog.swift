@@ -401,6 +401,13 @@ public final class FeatureCatalog {
             displayPriority: 20,
             implementation: .native
         )
+        // Lock-screen widgets: public lock notifications + shielding-level
+        // pass-through overlay (no SkyLight, no private frameworks).
+        map[.lockScreenWidgets] = FeatureMetadata(displayPriority: 21, implementation: .native)
+        // System sound tester: curated classic alert set, play buttons.
+        map[.systemSounds] = FeatureMetadata(displayPriority: 22, implementation: .native)
+        // Clipboard → Notes: one-shot osascript action.
+        map[.notesCapture] = FeatureMetadata(displayPriority: 23, implementation: .native, isAction: true)
         // Bluetooth radar: CoreBluetooth scan of nearby advertising devices.
         map[.bluetoothRadar] = FeatureMetadata(displayPriority: 5, implementation: .native)
         // File shelf + download watch: clipboard-tab file domain.

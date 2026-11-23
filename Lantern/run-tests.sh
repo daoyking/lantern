@@ -38,6 +38,9 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Services/GeminiLiveService.swift \
     Sources/Lantern/Services/GeminiAudioPipe.swift \
     Sources/Lantern/Services/NearbyShareService.swift \
+    Sources/Lantern/Services/LockScreenWidgetsService.swift \
+    Sources/Lantern/Services/SystemSoundsService.swift \
+    Sources/Lantern/Services/NotesCaptureService.swift \
     Sources/Lantern/Services/GeminiTools.swift \
     Sources/Lantern/Services/FocusService.swift \
     Sources/Lantern/Services/QuickLaunchService.swift \

@@ -335,4 +335,11 @@
 "nearby.accept" = "接受";
 "nearby.reject" = "拒绝";
 "nearby.received" = "已收到来自 %@";
+"feature.lockScreenWidgets.name" = "锁屏小组件";
+"feature.lockScreenWidgets.desc" = "锁定屏幕时在上方显示时钟与系统指标（实验性）";
+"feature.systemSounds.name" = "系统音效";
+"feature.systemSounds.desc" = "一键试听 macOS 经典提示音";
+"sounds.title" = "系统音效";
+"feature.notesCapture.name" = "剪贴板存入备忘录";
+"feature.notesCapture.desc" = "把剪贴板文本存成一条 Apple 备忘录（首次需授权自动化）";
 "nearby.preview.empty" = "文本片段";

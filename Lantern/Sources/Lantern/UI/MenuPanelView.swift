@@ -148,6 +148,12 @@ struct MenuPanelView: View {
                         if group == .tools {
                             GeminiSection(service: GeminiLiveService.shared)
                         }
+                        if group == .tools, runtime.activeFeatures.contains(.systemSounds) {
+                            SystemSoundsSection(service: SystemSoundsService.shared)
+                        }
+                        if group == .tools {
+                            NotesFeedbackView(service: NotesCaptureService.shared)
+                        }
                         ForEach(features, id: \.self) { feature in
                             FeatureRow(feature: feature)
                         }
@@ -823,6 +829,81 @@ struct BluetoothRadarSection: View {
     }
 }
 
+
+// MARK: - System sound tester (Sapphire subset)
+
+/// Grid of play buttons for the classic macOS alert sounds.
+struct SystemSoundsSection: View {
+    @ObservedObject var service: SystemSoundsService
+
+    private let columns = [GridItem(.adaptive(minimum: 78), spacing: 6)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "speaker.wave.2")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(PanelSurface.accent)
+                Text(L("sounds.title", "System Sounds"))
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                if let last = service.lastPlayed {
+                    Text(last)
+                        .font(.system(size: 10))
+                        .foregroundStyle(PanelSurface.tertiary)
+                }
+            }
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(SystemSoundsService.soundNames, id: \.self) { name in
+                    Button {
+                        service.play(name)
+                    } label: {
+                        Text(name)
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .background(PanelSurface.selectedTabBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                    .help(name)
+                }
+            }
+        }
+        .padding(10)
+        .background(PanelSurface.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Clipboard → Notes feedback line
+
+struct NotesFeedbackView: View {
+    @ObservedObject var service: NotesCaptureService
+
+    var body: some View {
+        Group {
+            if let title = service.lastResult {
+                HStack(spacing: 6) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(PanelSurface.accent)
+                    Text(title)
+                        .font(.system(size: 11))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
+            }
+        }
+    }
+}
 
 // MARK: - Gemini Live (M1: text turns)
 
