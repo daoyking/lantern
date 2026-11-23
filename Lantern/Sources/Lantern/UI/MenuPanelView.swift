@@ -24,13 +24,14 @@ struct MenuPanelView: View {
 
             panelFooter
         }
-        .frame(width: 360, height: 440)
-        .background(PanelSurface.background)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(width: 380, height: 460)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(PanelSurface.border, lineWidth: 1)
         )
+        .preferredColorScheme(.dark)
         // Esc closes the panel. onExitCommand is the macOS SwiftUI hook for Escape.
         .onExitCommand {
             NotificationCenter.default.post(name: .lanternClosePanel, object: nil)
@@ -71,7 +72,11 @@ struct MenuPanelView: View {
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape.fill")
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(PanelSurface.secondary)
+                    .frame(width: 26, height: 26)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(Circle())
             }
             .buttonStyle(.plain)
             .help(L("ui.settings", "Settings"))
@@ -131,7 +136,7 @@ struct MenuPanelView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: 10) {
                         // Clipboard tab gains a live history list above the
                         // feature rows — the collected entries were previously
                         // invisible to the user. Observed so new captures
@@ -161,11 +166,13 @@ struct MenuPanelView: View {
                             FeatureRow(feature: feature)
                         }
                     }
-                    .padding(12)
+                    .padding(14)
                 }
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
         }
         .id(group) // reset scroll position when switching tabs
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
     }
 
     // MARK: - Footer
@@ -242,20 +249,25 @@ struct TabButton: View {
         Button(action: action) {
             VStack(spacing: 3) {
                 Image(systemName: icon)
-                    .font(.system(size: 15))
+                    .font(.system(size: 15, weight: .medium))
                 Text(label)
-                    .font(.system(size: 9))
+                    .font(.system(size: 9, weight: isSelected ? .semibold : .regular))
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
-            .foregroundStyle(isSelected ? PanelSurface.accent : PanelSurface.secondary)
+            .foregroundStyle(isSelected ? Color.white : PanelSurface.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .contentShape(Rectangle())
-            .background(isSelected ? PanelSurface.selectedTabBackground : Color.clear)
-            .cornerRadius(6)
+            .padding(.horizontal, 2)
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isSelected ? PanelSurface.selectedTabBackground : Color.clear)
+            }
+            .scaleEffect(isSelected ? 1.0 : 0.98)
         }
         .buttonStyle(.plain)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isSelected)
         .help(label)
     }
 }
@@ -264,6 +276,7 @@ struct FeatureRow: View {
     let feature: AppFeature
     @StateObject private var runtime = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
+    @State private var isHovering = false
 
     private var metadata: FeatureMetadata {
         FeatureCatalog.shared.metadata(for: feature)
@@ -286,7 +299,7 @@ struct FeatureRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 5) {
                     Text(feature.displayName)
-                        .font(.subheadline)
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(PanelSurface.primary)
 
                     // Lock = this needs a macOS permission the user hasn't granted.
@@ -309,11 +322,11 @@ struct FeatureRow: View {
                     if !metadata.implementation.localizedBadge.isEmpty {
                         Text(metadata.implementation.localizedBadge)
                             .font(.system(size: 8, weight: .semibold))
-                            .foregroundStyle(metadata.implementation == .simulated ? .orange : .secondary)
+                            .foregroundStyle(metadata.implementation == .simulated ? .orange : PanelSurface.secondary)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
                             .background(
-                                RoundedRectangle(cornerRadius: 3)
+                                RoundedRectangle(cornerRadius: 3, style: .continuous)
                                     .fill(metadata.implementation == .simulated
                                           ? Color.orange.opacity(0.15)
                                           : Color.white.opacity(0.08))
@@ -329,19 +342,21 @@ struct FeatureRow: View {
 
             Spacer(minLength: 8)
 
-            // One-shot actions render as a button; stateful features as a
-            // switch. Permission gating lives in FeatureRuntime — a click on
-            // a locked row asks for the permission instead of running an
-            // action that would silently fail. (The UI used to request the
-            // permission too, opening System Settings twice.)
+            // One-shot actions render as a circular icon button (Sapphire
+            // CircleIconButtonStyle); stateful features as a switch.
+            // Permission gating lives in FeatureRuntime — a click on a
+            // locked row asks for the permission instead of running an
+            // action that would silently fail.
             if metadata.isAction {
                 Button {
                     runtime.performAction(feature)
                 } label: {
-                    Image(systemName: "arrow.right.circle.fill")
-                        .foregroundStyle(isLocked ? .orange : PanelSurface.accent)
+                    Image(systemName: "arrow.right")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(CircleIconButtonStyle(
+                    type: isLocked ? .normal : .prominent,
+                    size: .small
+                ))
                 .help(isLocked
                       ? String(format: L("hint.needsPermission", "Needs %@ permission — click to grant"),
                                requiredPermission?.humanReadableName ?? "")
@@ -357,14 +372,17 @@ struct FeatureRow: View {
                 .labelsHidden()
             }
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .background(PanelSurface.cardBackground)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(PanelSurface.cardBorder, lineWidth: 1)
+        .roundedCard(
+            fill: Color.white.opacity(isHovering ? 0.11 : 0.08),
+            cornerRadius: 12,
+            stroke: PanelSurface.cardBorder
         )
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovering)
     }
 }
 
@@ -433,7 +451,7 @@ struct ClipboardHistorySection: View {
         .background(PanelSurface.cardBackground)
         .cornerRadius(8)
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(PanelSurface.cardBorder, lineWidth: 1)
         )
     }
@@ -486,7 +504,7 @@ struct ClipboardHistoryRow: View {
             .padding(.horizontal, 8)
             .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.white.opacity(copied ? 0.12 : 0.04))
             )
         }
@@ -498,20 +516,80 @@ struct ClipboardHistoryRow: View {
 // MARK: - Panel Styling
 
 enum PanelSurface {
-    static var background: Color { Color(red: 0.09, green: 0.09, blue: 0.10) }
-    static var headerBackground: Color { Color(red: 0.12, green: 0.12, blue: 0.13) }
-    static var tabBarBackground: Color { Color(red: 0.10, green: 0.10, blue: 0.11) }
-    static var footerBackground: Color { Color(red: 0.08, green: 0.08, blue: 0.09) }
-    static var cardBackground: Color { Color(red: 0.15, green: 0.15, blue: 0.16) }
-    static var selectedTabBackground: Color { Color.white.opacity(0.1) }
+    // Sapphire-style translucent surfaces: cards float as white-on-glass
+    // chips over the panel's ultraThinMaterial backdrop instead of opaque
+    // near-black blocks.
+    static var background: Color { Color.white.opacity(0.05) }
+    static var headerBackground: Color { Color.white.opacity(0.06) }
+    static var tabBarBackground: Color { Color.white.opacity(0.04) }
+    static var footerBackground: Color { Color.white.opacity(0.04) }
+    static var cardBackground: Color { Color.white.opacity(0.08) }
+    static var selectedTabBackground: Color { Color.white.opacity(0.14) }
     static var primary: Color { .white }
-    static var secondary: Color { .white.opacity(0.7) }
-    static var tertiary: Color { .white.opacity(0.4) }
+    static var secondary: Color { .white.opacity(0.72) }
+    static var tertiary: Color { .white.opacity(0.45) }
     static var accent: Color { .blue }
-    static var border: Color { .white.opacity(0.1) }
-    static var cardBorder: Color { .white.opacity(0.05) }
+    static var border: Color { .white.opacity(0.12) }
+    static var cardBorder: Color { .white.opacity(0.09) }
     static var separator: Color { .white.opacity(0.1) }
     static var title: Color { .white }
+}
+
+// MARK: - Sapphire-style primitives
+
+/// Sapphire's RoundedCard: fill + continuous-corner clip + 1 pt stroke.
+/// Continuous curvature is the signature softness of Sapphire cards.
+extension View {
+    func roundedCard(
+        fill: Color,
+        cornerRadius: CGFloat,
+        stroke: Color,
+        lineWidth: CGFloat = 1
+    ) -> some View {
+        background(fill)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(stroke, lineWidth: lineWidth)
+            )
+    }
+}
+
+/// Sapphire's circular icon button: 32/36 pt circle, springy press-down.
+/// prominent = accent fill, normal = translucent chip, destructive = red.
+struct CircleIconButtonStyle: ButtonStyle {
+    enum Size { case regular, small }
+
+    var type: ModernButtonType
+    var size: Size = .regular
+
+    enum ModernButtonType {
+        case prominent, normal, destructive
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: size == .small ? 13 : 15, weight: .semibold))
+            .foregroundColor(type == .normal ? .white.opacity(0.85) : .white)
+            .frame(width: diameter, height: diameter)
+            .background(backgroundColor)
+            .clipShape(Circle())
+            .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
+            .animation(
+                .spring(response: 0.3, dampingFraction: 0.7),
+                value: configuration.isPressed
+            )
+    }
+
+    private var diameter: CGFloat { size == .small ? 28 : 34 }
+
+    private var backgroundColor: Color {
+        switch type {
+        case .prominent: return Color.accentColor
+        case .normal: return Color.white.opacity(0.18)
+        case .destructive: return .red
+        }
+    }
 }
 
 // MARK: - Per-app audio (sound tab)
@@ -558,9 +636,9 @@ struct PerAppAudioSection: View {
         }
         .padding(10)
         .background(PanelSurface.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
         )
     }
@@ -649,7 +727,7 @@ struct FileShelfSection: View {
                     .background(PanelSurface.cardBackground)
                     .cornerRadius(8)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
                             .foregroundStyle(PanelSurface.tertiary)
                     )
@@ -870,7 +948,7 @@ struct FaceIDSection: View {
                         .padding(.vertical, 5)
                         .padding(.horizontal, 10)
                         .background(PanelSurface.selectedTabBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 if hasProfile {
@@ -883,7 +961,7 @@ struct FaceIDSection: View {
                             .padding(.vertical, 5)
                             .padding(.horizontal, 10)
                             .background(PanelSurface.selectedTabBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
@@ -891,9 +969,9 @@ struct FaceIDSection: View {
         }
         .padding(10)
         .background(PanelSurface.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
         )
         .onAppear { hasProfile = service.store.hasProfile }
@@ -934,7 +1012,7 @@ struct SystemSoundsSection: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 6)
                             .background(PanelSurface.selectedTabBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .help(name)
@@ -943,9 +1021,9 @@ struct SystemSoundsSection: View {
         }
         .padding(10)
         .background(PanelSurface.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
         )
     }
@@ -1011,9 +1089,9 @@ struct GeminiSection: View {
         }
         .padding(10)
         .background(PanelSurface.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
         )
     }
@@ -1172,9 +1250,9 @@ struct NearbySection: View {
         }
         .padding(10)
         .background(PanelSurface.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
         )
     }

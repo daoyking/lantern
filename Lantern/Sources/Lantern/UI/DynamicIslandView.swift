@@ -79,12 +79,24 @@ struct DynamicIslandFace: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Rectangle()
-                .fill(Color.black.opacity(0.92))
-                // The real notch casts no shadow — only the expanded state
-                // floats above the menu bar and gets one.
-                .shadow(color: service.expanded ? .black.opacity(0.35) : .clear,
-                        radius: 6, y: 2)
+            // Compact = solid black (the notch illusion). Expanded = Sapphire
+            // glass: ultraThinMaterial under a translucent black veil so the
+            // widgets float on whatever is behind the island.
+            ZStack {
+                if service.expanded {
+                    Rectangle().fill(.ultraThinMaterial)
+                }
+                Rectangle()
+                    .fill(Color.black.opacity(service.expanded ? 0.45 : 0.92))
+            }
+            .overlay(
+                Rectangle()
+                    .stroke(service.expanded ? Color.white.opacity(0.12) : .clear, lineWidth: 1)
+            )
+            // The real notch casts no shadow — only the expanded state
+            // floats above the menu bar and gets one.
+            .shadow(color: service.expanded ? .black.opacity(0.35) : .clear,
+                    radius: 6, y: 2)
 
             if service.expanded {
                 expandedContent
