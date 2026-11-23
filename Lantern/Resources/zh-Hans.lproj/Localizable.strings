@@ -359,3 +359,10 @@
 "faceid.enroll.hint" = "跟着提示做，大约 10 秒";
 "faceid.cancel" = "取消";
 "nearby.preview.empty" = "文本片段";
+
+/* Update checker */
+"update.check" = "检查更新";
+"update.upToDate" = "已是最新版本";
+"update.available" = "%@ 已发布 — 去下载";
+"update.openRelease" = "打开发布页";
+"update.badPayload" = "无法读取发布信息";

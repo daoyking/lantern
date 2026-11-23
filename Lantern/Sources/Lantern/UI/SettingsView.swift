@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage(DefaultsKey.panelOpacity.rawValue) private var opacity: Double = 1.0
     @AppStorage(DefaultsKey.showAnimations.rawValue) private var showAnimations = true
     @AppStorage("lantern.appLanguage") private var language: AppLanguage = .simplifiedChinese
+    @ObservedObject private var update = UpdateChecker.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -65,6 +66,43 @@ struct SettingsView: View {
                     LabeledContent(L("settings.version", "Version"), value: MenuPanelView.appVersion)
                     LabeledContent(L("settings.bundleId", "Bundle ID"), value: "me.lantern.menubar")
                     LabeledContent(L("settings.license", "License"), value: "GPL-3.0")
+
+                    // Update check — reads GitHub Releases; a newer tag puts
+                    // a pill in the panel footer too. Notify + open only (no
+                    // self-replace: ad-hoc signed).
+                    HStack {
+                        Button {
+                            update.checkForUpdate()
+                        } label: {
+                            if update.isChecking {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Text(L("update.check", "Check for Updates"))
+                            }
+                        }
+                        .buttonStyle(.bordered)
+
+                        Spacer()
+
+                        if update.hasUpdate, let latest = update.latestVersion {
+                            Button {
+                                update.openReleasePage()
+                            } label: {
+                                Text(String(format: L("update.available", "%@ available — download"), latest))
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else if let error = update.lastError {
+                            Text(error)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        } else if update.latestVersion != nil {
+                            Text(L("update.upToDate", "Up to date"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             }
             .formStyle(.grouped)

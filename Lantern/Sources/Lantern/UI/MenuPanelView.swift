@@ -5,6 +5,7 @@ import SwiftUI
 struct MenuPanelView: View {
     @StateObject private var runtime = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
+    @ObservedObject private var updateChecker = UpdateChecker.shared
     @State private var selectedTab: FeatureGroup = .windowsDock
     @State private var showSettings = false
     /// Increment on in-app language change so every Text/Button re-evaluates L().
@@ -41,6 +42,11 @@ struct MenuPanelView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .lanternLanguageChanged)) { _ in
             languageTick += 1
+        }
+        .onAppear {
+            // Cheap background update probe whenever the panel opens;
+            // failures stay silent (lastError is only surfaced in Settings).
+            updateChecker.checkForUpdate()
         }
         .id(languageTick)
     }
@@ -182,6 +188,28 @@ struct MenuPanelView: View {
             Text(String(format: L("ui.version", "Lantern v%@"), MenuPanelView.appVersion))
                 .font(.caption2)
                 .foregroundStyle(PanelSurface.tertiary)
+
+            // Update-available pill — appears only when the GitHub Release
+            // tag is strictly newer than this bundle.
+            if updateChecker.hasUpdate {
+                Button {
+                    updateChecker.openReleasePage()
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.caption2)
+                        if let latest = updateChecker.latestVersion {
+                            Text(latest).font(.caption2)
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(Color.accentColor))
+                }
+                .buttonStyle(.plain)
+                .help(L("update.openRelease", "Open release page"))
+            }
 
             Spacer()
 

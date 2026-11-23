@@ -1153,4 +1153,26 @@ do {
 }
 
 cleanFeaturePrefs()
+
+// MARK: - ▶37 Update checker
+
+print("▶37 Update checker")
+do {
+    // Version parsing: v-prefix, build suffix, malformed input.
+    Check.that(UpdateChecker.parseVersion("v0.2.0") == [0, 2, 0], "parse v0.2.0")
+    Check.that(UpdateChecker.parseVersion("0.1.0-1") == [0, 1, 0], "parse 0.1.0-1 → 0.1.0")
+    Check.that(UpdateChecker.parseVersion("junk") == nil, "malformed tag rejected")
+
+    // Strictly-newer comparison across widths.
+    Check.that(UpdateChecker.isNewer("v0.2.0", than: "0.1.0"), "0.2.0 > 0.1.0")
+    Check.that(UpdateChecker.isNewer("0.1.0", than: "0.1.0-1") == false, "equal after suffix strip is not newer")
+    Check.that(UpdateChecker.isNewer("0.1.0", than: "0.1.0") == false, "same version not newer")
+    Check.that(UpdateChecker.isNewer("0.2", than: "0.1.9"), "shorter tag pads with zero: 0.2 > 0.1.9")
+    Check.that(UpdateChecker.isNewer("junk", than: "0.1.0") == false, "malformed candidate never newer")
+    Check.that(UpdateChecker.isNewer("v0.10.0", than: "v0.9.0"), "numeric not lexicographic: 10 > 9")
+
+    // Service wiring.
+    Check.that(!UpdateChecker.shared.hasUpdate, "fresh checker reports no update")
+}
+
 Check.finish()

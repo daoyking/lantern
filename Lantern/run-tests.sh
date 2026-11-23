@@ -20,6 +20,7 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Core/DefaultsKey.swift \
     Sources/Lantern/Core/FeatureCatalog.swift \
     Sources/Lantern/Core/Permissions.swift \
+    Sources/Lantern/Core/UpdateChecker.swift \
     Sources/Lantern/Core/FeatureService.swift \
     Sources/Lantern/Core/FeatureRuntime.swift \
     Sources/Lantern/Core/StringTable.swift \
