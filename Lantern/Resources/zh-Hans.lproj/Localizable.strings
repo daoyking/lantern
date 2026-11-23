@@ -366,3 +366,5 @@
 "update.available" = "%@ 已发布 — 去下载";
 "update.openRelease" = "打开发布页";
 "update.badPayload" = "无法读取发布信息";
+"feature.menuBarHider.name" = "菜单栏收纳";
+"feature.menuBarHider.desc" = "把拥挤的菜单栏图标收进一个箭头后面，点击箭头随时找回";

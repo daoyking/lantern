@@ -97,6 +97,7 @@ build() {
         Sources/Lantern/Services/FaceIDModels.swift
         Sources/Lantern/Services/FaceIDController.swift
         Sources/Lantern/Services/FaceIDService.swift
+        Sources/Lantern/Services/MenuBarHiderService.swift
         Sources/Lantern/Services/GeminiTools.swift
         Sources/Lantern/Services/FocusService.swift
         Sources/Lantern/Services/QuickLaunchService.swift

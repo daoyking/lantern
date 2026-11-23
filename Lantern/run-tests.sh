@@ -45,6 +45,7 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Services/FaceIDModels.swift \
     Sources/Lantern/Services/FaceIDController.swift \
     Sources/Lantern/Services/FaceIDService.swift \
+    Sources/Lantern/Services/MenuBarHiderService.swift \
     Sources/Lantern/UI/FaceIDViews.swift \
     Sources/Lantern/Services/GeminiTools.swift \
     Sources/Lantern/Services/FocusService.swift \

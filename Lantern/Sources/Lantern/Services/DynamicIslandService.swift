@@ -27,12 +27,13 @@ public final class DynamicIslandService: BaseFeatureService {
         return h >= 24 ? h : 32
     }
 
-    /// Idle state mimics the hardware notch: 184pt wide, notch-height tall,
-    /// flush with the top edge. On notched Macs the black slab blends into
-    /// the real notch (nothing extra visible); on notch-less displays it
-    /// reads as a small top-centre bar.
+    /// Idle state carries the clock wing: time / date / weather live on the
+    /// idle slab (user request: they leave the expanded hub entirely). The
+    /// slab is wide enough for the hardware notch (184pt) plus a right wing
+    /// (~150pt) that hosts the row, centred like the notch itself. Constant
+    /// width keeps the idle look stable whether or not weather is available.
     private static var compactSize: CGSize {
-        CGSize(width: 184, height: notchHeight)
+        CGSize(width: 460, height: notchHeight)
     }
     private static let topInset: CGFloat = 0   // flush with the top edge
 
@@ -50,29 +51,6 @@ public final class DynamicIslandService: BaseFeatureService {
         return defaults.object(forKey: key.rawValue) == nil
             ? defaultIfUnset
             : defaults.bool(forKey: key.rawValue)
-    }
-
-    private var enabledSlotCount: Int {
-        var count = 0
-        if Self.slotEnabled(.islandShowTime, defaultIfUnset: true) { count += 1 }
-        if Self.slotEnabled(.islandShowDate, defaultIfUnset: false) { count += 1 }
-        if Self.slotEnabled(.islandShowWeather, defaultIfUnset: false), weatherTempC != nil { count += 1 }
-        if Self.slotEnabled(.islandShowVolume, defaultIfUnset: false), volumePercent >= 0 { count += 1 }
-        if Self.slotEnabled(.islandShowCPU, defaultIfUnset: true) { count += 1 }
-        if Self.slotEnabled(.islandShowMemory, defaultIfUnset: true) { count += 1 }
-        if Self.slotEnabled(.islandShowBattery, defaultIfUnset: true), batteryPercent >= 0 { count += 1 }
-        if calendarHasEvent { count += 1 }
-        // Timer slot follows the quickTimer feature toggle + an active countdown.
-        if UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey("quickTimer")),
-           QuickTimerService.shared.endAt != nil { count += 1 }
-        // Gemini slot follows its island key + an open Live session.
-        if Self.slotEnabled(.islandShowGemini, defaultIfUnset: false),
-           GeminiLiveService.shared.isOpen { count += 1 }
-        // Focus slot: same pattern with the focusMode toggle.
-        if UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey("focusMode")),
-           FocusService.shared.endAt != nil { count += 1 }
-        if Self.slotEnabled(.islandShowNetwork, defaultIfUnset: true) { count += 1 }
-        return count
     }
 
     // MARK: - Live state (observed by the island face)

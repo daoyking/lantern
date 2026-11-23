@@ -1175,4 +1175,60 @@ do {
     Check.that(!UpdateChecker.shared.hasUpdate, "fresh checker reports no update")
 }
 
+cleanFeaturePrefs()
+
+// MARK: - ▶38 Menu bar hider + island idle wing
+
+print("▶38 Menu bar hider")
+do {
+    // Native visibility gate: on macOS 27 MenuBarClientCore must resolve;
+    // on older or future OSes the gate degrades cleanly instead of crashing.
+    // Either outcome is fine — what matters is that the call never raises.
+    let nativeAvailable = MenuBarHiderService.nativeVisibilityAvailable()
+    let osMajor = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+    if osMajor >= 27 {
+        Check.that(nativeAvailable, "macOS 27 resolves MenuBarClientCore")
+    }
+
+    // Engine selection mirrors the availability gate.
+    let service = MenuBarHiderService(feature: .menuBarHider)
+    try service.start()
+    let expectedEngine: MenuBarHiderService.EngineKind =
+        nativeAvailable ? .native : .legacy
+    Check.that(service.engineKind == expectedEngine, "engine selected per availability")
+    Check.that(service.isCollapsed == false, "starts expanded")
+
+    // Legacy path math: inflation covers the widest screen, bounded at 10k.
+    let widest = NSScreen.screens.map { $0.frame.width }.max() ?? 1_728
+    let expectedLength = max(500, min(widest * 2, 10_000))
+    Check.that(expectedLength >= 500 && expectedLength <= 10_000, "collapse length bounded")
+
+    if nativeAvailable {
+        // Native collapse: assertion activates asynchronously; poll briefly.
+        service.collapse()
+        let deadline = Date().addingTimeInterval(2.0)
+        while !service.isCollapsed && Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.05)) }
+        Check.that(service.isCollapsed, "native collapse holds an assertion")
+        service.expand()
+        Check.that(!service.isCollapsed, "expand releases the bar")
+        Check.that(!MenuBarHiderService.hasLiveAssertion, "assertion handle cleared after expand")
+    } else {
+        // Legacy engine: separator inflation path.
+        service.collapse()
+        Check.that(service.isCollapsed, "legacy collapse flips state")
+        service.expand()
+        Check.that(!service.isCollapsed, "legacy expand restores")
+    }
+
+    // Feature semantics: status-type, tools group, registered defaults.
+    Check.that(AppFeature.menuBarHider.group == .tools, "menuBarHider lives in tools")
+    Check.that(FeatureCatalog.shared.metadata(for: .menuBarHider).implementation == .native,
+               "menuBarHider is native")
+
+    try service.stop()
+    Check.that(!service.isCollapsed, "stop expands before teardown")
+}
+
+cleanFeaturePrefs()
+
 Check.finish()

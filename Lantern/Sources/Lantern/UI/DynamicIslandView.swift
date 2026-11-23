@@ -39,7 +39,7 @@ struct DynamicIslandFace: View {
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, weather, nextEvent, timer, focus, gemini, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case nextEvent, timer, focus, gemini, volume, cpu, memory, battery, network }
 
     init(service: DynamicIslandService) {
         self.service = service
@@ -67,13 +67,12 @@ struct DynamicIslandFace: View {
 
     private var enabledSlots: [IslandSlot] {
         var slots: [IslandSlot] = []
-        if showTime { slots.append(.time) }
-        if showDate { slots.append(.date) }
-        if showWeather, service.weatherTempC != nil { slots.append(.weather) }
+        // Time / date / weather live on the IDLE wing, not in the expanded
+        // hub (user request) — the hero clock already covers time+date there.
         if showNextEvent, calendar.nextEvent != nil { slots.append(.nextEvent) }
         if showTimer, timer.endAt != nil { slots.append(.timer) }
-        if showGemini, gemini.isOpen { slots.append(.gemini) }
         if showFocus, focus.endAt != nil { slots.append(.focus) }
+        if showGemini, gemini.isOpen { slots.append(.gemini) }
         if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
         if showCPU { slots.append(.cpu) }
         if showMemory { slots.append(.memory) }
@@ -105,6 +104,8 @@ struct DynamicIslandFace: View {
 
             if service.expanded {
                 expandedContent
+            } else {
+                idleWing
             }
         }
         .contentShape(Rectangle())
@@ -115,6 +116,47 @@ struct DynamicIslandFace: View {
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
+    }
+
+    // MARK: - Idle: the clock wing (time / date / weather beside the notch)
+
+    /// Right wing of the idle slab: time, date and weather in one row.
+    /// The slab (460pt) is centred, the hardware notch occupies the middle
+    /// 184pt, so the wing area right of it hosts this row.
+    private var idleWing: some View {
+        HStack(spacing: 7) {
+            if showTime {
+                Text(Self.timeFormatter.string(from: service.now))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+            }
+            if showDate {
+                Text(Self.dateFormatter.string(from: service.now))
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.55))
+                    .lineLimit(1)
+            }
+            if showWeather, let temp = service.weatherTempC {
+                HStack(spacing: 2) {
+                    if let code = service.weatherCode {
+                        Image(systemName: IslandWeatherService.symbol(for: code))
+                            .font(.system(size: 9))
+                            .foregroundColor(.cyan)
+                    }
+                    Text("\(Int(temp))°")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
+                }
+            }
+        }
+        // Park the row in the right wing: notch region (184pt) sits centred,
+        // so the row hugs the right edge with a small margin.
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.trailing, 14)
+        .padding(.leading, 184 + 8)
+        .contentShape(Rectangle())
+        .onTapGesture { service.toggleExpanded() }
+        .animation(.snappy(duration: 0.3), value: service.weatherTempC)
     }
 
     // MARK: - Expanded: hero + chip row (Sapphire notch-hub layout)
@@ -221,14 +263,6 @@ struct DynamicIslandFace: View {
     @ViewBuilder
     private func chipIcon(_ slot: IslandSlot) -> some View {
         switch slot {
-        case .time, .date:
-            EmptyView()
-        case .weather:
-            if let code = service.weatherCode {
-                Image(systemName: IslandWeatherService.symbol(for: code))
-                    .font(.system(size: 10))
-                    .foregroundColor(.cyan)
-            }
         case .nextEvent:
             Image(systemName: "calendar")
                 .font(.system(size: 10))
@@ -271,19 +305,6 @@ struct DynamicIslandFace: View {
     @ViewBuilder
     private func chipValue(_ slot: IslandSlot) -> some View {
         switch slot {
-        case .time:
-            Text(Self.timeFormatter.string(from: service.now))
-                .chipText()
-        case .date:
-            Text(Self.dateFormatter.string(from: service.now))
-                .chipText()
-        case .weather:
-            if let temp = service.weatherTempC {
-                let code = service.weatherCode ?? 3
-                let cond = IslandWeatherService.condition(for: code)
-                Text("\(L(cond.key, cond.english)) \(Int(temp))°")
-                    .chipText()
-            }
         case .nextEvent:
             if let reading = calendar.nextEvent {
                 Text("\(Self.eventTimeFormatter.string(from: reading.start)) \(reading.title)")
