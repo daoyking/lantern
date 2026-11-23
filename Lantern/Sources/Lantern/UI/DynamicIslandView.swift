@@ -118,44 +118,55 @@ struct DynamicIslandFace: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
     }
 
-    // MARK: - Idle: the clock wing (time / date / weather beside the notch)
+    // MARK: - Idle: clock wings (time on the left, date + weather on the right)
 
-    /// Right wing of the idle slab: time, date and weather in one row.
-    /// The slab (460pt) is centred, the hardware notch occupies the middle
-    /// 184pt, so the wing area right of it hosts this row.
+    /// The idle slab flanks the hardware notch with one wing each side:
+    /// time lives alone on the left, date + weather on the right — visually
+    /// balanced around the notch instead of crowding one corner.
     private var idleWing: some View {
-        HStack(spacing: 7) {
-            if showTime {
-                Text(Self.timeFormatter.string(from: service.now))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
-            }
-            if showDate {
-                Text(Self.dateFormatter.string(from: service.now))
-                    .font(.system(size: 10))
-                    .foregroundColor(.white.opacity(0.55))
-                    .lineLimit(1)
-            }
-            if showWeather, let temp = service.weatherTempC {
-                HStack(spacing: 2) {
-                    if let code = service.weatherCode {
-                        Image(systemName: IslandWeatherService.symbol(for: code))
-                            .font(.system(size: 9))
-                            .foregroundColor(.cyan)
-                    }
-                    Text("\(Int(temp))°")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+        HStack(spacing: 0) {
+            // Left wing: the clock, alone.
+            HStack(spacing: 0) {
+                if showTime {
+                    Text(Self.timeFormatter.string(from: service.now))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 14)
+            .contentShape(Rectangle())
+            .onTapGesture { service.toggleExpanded() }
+
+            // The real notch occupies the middle of the slab.
+            Color.clear.frame(width: 184)
+
+            // Right wing: date and weather.
+            HStack(spacing: 7) {
+                if showDate {
+                    Text(Self.dateFormatter.string(from: service.now))
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.55))
+                        .lineLimit(1)
+                }
+                if showWeather, let temp = service.weatherTempC {
+                    HStack(spacing: 2) {
+                        if let code = service.weatherCode {
+                            Image(systemName: IslandWeatherService.symbol(for: code))
+                                .font(.system(size: 9))
+                                .foregroundColor(.cyan)
+                        }
+                        Text("\(Int(temp))°")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white.opacity(0.85))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.trailing, 14)
+            .contentShape(Rectangle())
+            .onTapGesture { service.toggleExpanded() }
         }
-        // Park the row in the right wing: notch region (184pt) sits centred,
-        // so the row hugs the right edge with a small margin.
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .padding(.trailing, 14)
-        .padding(.leading, 184 + 8)
-        .contentShape(Rectangle())
-        .onTapGesture { service.toggleExpanded() }
         .animation(.snappy(duration: 0.3), value: service.weatherTempC)
     }
 
