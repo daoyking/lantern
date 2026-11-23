@@ -434,6 +434,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (AppFeature.dynamicIslandShowMusic, DefaultsKey.islandShowMusic, false),
             (AppFeature.dynamicIslandShowNextEvent, DefaultsKey.islandShowNextEvent, false),
             (AppFeature.dynamicIslandShowGemini, DefaultsKey.islandShowGemini, false),
+            (AppFeature.geminiScreenFrames, DefaultsKey.geminiScreenFrames, false),
+            (AppFeature.geminiScreenFrames, DefaultsKey.geminiScreenFrames, false),
         ] {
             runtime.register(feature, service: PreferenceToggleService(
                 feature: feature,

@@ -1,4 +1,5 @@
 import AVFoundation
+import ScreenCaptureKit
 import Foundation
 import Combine
 
@@ -25,6 +26,7 @@ final class GeminiLiveSession: NSObject {
         case interrupted
         case inputTranscription(String)
         case outputTranscription(String, finished: Bool)
+        case toolCall(id: String, name: String, argsJSON: String)
         case error(String)
     }
 
@@ -72,6 +74,7 @@ final class GeminiLiveSession: NSObject {
             setup["inputAudioTranscription"] = [:]
             setup["outputAudioTranscription"] = [:]
         }
+        setup["tools"] = [["functionDeclarations": GeminiToolRegistry.declarations]]
         if let prompt = config.systemPrompt, !prompt.isEmpty {
             setup["systemInstruction"] = ["parts": [["text": prompt]]]
         }
@@ -85,6 +88,29 @@ final class GeminiLiveSession: NSObject {
                 "audio": [
                     "mimeType": "audio/pcm;rate=16000",
                     "data": pcm16.base64EncodedString(),
+                ]
+            ]
+        ])
+    }
+
+    /// Downlink tool result: `{"toolResponse":{"functionResponses":[...]}}`
+    static func toolResponseMessage(id: String, name: String, result: String) -> Data {
+        try! JSONSerialization.data(withJSONObject: [
+            "toolResponse": [
+                "functionResponses": [
+                    ["id": id, "name": name, "response": ["result": result]]
+                ]
+            ]
+        ])
+    }
+
+    /// Optional screen frame uplink: `{"realtimeInput":{"video":{"mimeType":"image/jpeg","data":...}}}`
+    static func realtimeVideoMessage(jpeg: Data) -> Data {
+        try! JSONSerialization.data(withJSONObject: [
+            "realtimeInput": [
+                "video": [
+                    "mimeType": "image/jpeg",
+                    "data": jpeg.base64EncodedString(),
                 ]
             ]
         ])
@@ -110,6 +136,16 @@ final class GeminiLiveSession: NSObject {
         if let error = obj["error"] as? [String: Any] {
             let message = (error["message"] as? String) ?? "unknown Gemini error"
             return .error(message)
+        }
+        if obj["toolCall"] as? [String: Any] != nil,
+           let calls = (obj["toolCall"] as! [String: Any])["functionCalls"] as? [[String: Any]],
+           let call = calls.first,
+           let name = call["name"] as? String, !name.isEmpty {
+            let id = (call["id"] as? String) ?? name
+            let args: [String: Any] = (call["args"] as? [String: Any]) ?? [:]
+            let argsJSON = (try? JSONSerialization.data(withJSONObject: args))
+                .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+            return .toolCall(id: id, name: name, argsJSON: argsJSON)
         }
         guard let content = obj["serverContent"] as? [String: Any] else { return nil }
         if let interrupted = content["interrupted"] as? Bool, interrupted {
@@ -230,6 +266,7 @@ final class GeminiLiveService: BaseFeatureService {
 
     private var session: GeminiLiveSession?
     private let audioPipe = GeminiAudioPipe()
+    private var screenTimer: Timer?
 
     public var voiceModel: String {
         UserDefaults.standard.string(forKey: DefaultsKey.geminiVoiceModel.rawValue)
@@ -281,6 +318,7 @@ final class GeminiLiveService: BaseFeatureService {
         if voiceMode {
             try? audioPipe.startCapture()
         }
+        startScreenTimerIfNeeded()
     }
 
     override public func stop() throws {
@@ -288,6 +326,8 @@ final class GeminiLiveService: BaseFeatureService {
         session = nil
         audioPipe.stopCapture()
         audioPipe.stopPlayback()
+        screenTimer?.invalidate()
+        screenTimer = nil
         sessionState = .idle
     }
 
@@ -332,6 +372,10 @@ final class GeminiLiveService: BaseFeatureService {
             audioPipe.stopPlayback()
         case .inputTranscription(let text):
             streamingReply += text
+        case .toolCall(let id, let name, let argsJSON):
+            let args = ((try? JSONSerialization.jsonObject(with: Data(argsJSON.utf8))) as? [String: Any]) ?? [:]
+            let result = GeminiToolRegistry.execute(name: name, args: args)
+            session?.send(.data(GeminiLiveSession.toolResponseMessage(id: id, name: name, result: result)))
         case .error(let message):
             sessionState = .closed(message)
         case .setupComplete, .outputTranscription:
@@ -340,6 +384,58 @@ final class GeminiLiveService: BaseFeatureService {
     }
 }
 
+
+// MARK: - Screen frames (M3, optional)
+
+extension GeminiLiveService {
+
+    /// Screen-frame uplink: 1 fps while the session is open AND
+    /// `lantern_gemini_screen_frames` is on. Needs screen-recording TCC;
+    /// without it the loop silently skips (preflight fails).
+    public var screenFramesEnabled: Bool {
+        UserDefaults.standard.bool(forKey: DefaultsKey.geminiScreenFrames.rawValue)
+    }
+
+    private func startScreenTimerIfNeeded() {
+        guard screenTimer == nil else { return }
+        screenTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.tickScreenFrame()
+        }
+    }
+
+    private func tickScreenFrame() {
+        guard isOpen, screenFramesEnabled, CGPreflightScreenCaptureAccess() else { return }
+        Task.detached { [weak self] in
+            guard let jpeg = await Self.captureScreenJPEG() else { return }
+            await MainActor.run { [weak self] in
+                self?.session?.send(.data(GeminiLiveSession.realtimeVideoMessage(jpeg: jpeg)))
+            }
+        }
+    }
+
+    /// One JPEG frame of the main display, longest edge capped at 1280,
+    /// quality 0.55 (Sapphire-verified parameters).
+    static func captureScreenJPEG() async -> Data? {
+        guard let content = try? await SCShareableContent.current,
+              let display = content.displays.first
+        else { return nil }
+        let scale = min(1.0, 1280.0 / Double(max(display.width, display.height)))
+        let filter = SCContentFilter(display: display, excludingWindows: [])
+        let config = SCStreamConfiguration()
+        config.width = Int(Double(display.width) * scale)
+        config.height = Int(Double(display.height) * scale)
+        config.showsCursor = false
+        let image: CGImage? = await withCheckedContinuation { continuation in
+            SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) { cgImage, _ in
+                continuation.resume(returning: cgImage)
+            }
+        }
+        guard let image else { return nil }
+        let rep = NSBitmapImageRep(cgImage: image)
+        let props: [NSBitmapImageRep.PropertyKey: Any] = [.compressionFactor: 0.55]
+        return rep.representation(using: .jpeg, properties: props)
+    }
+}
 
 // MARK: - Voice gate (separate feature, same pipeline)
 

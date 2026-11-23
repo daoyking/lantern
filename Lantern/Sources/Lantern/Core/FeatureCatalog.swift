@@ -391,6 +391,11 @@ public final class FeatureCatalog {
             displayPriority: 19,
             implementation: .native
         )
+        // Screen frames: 1 fps uplink while the Live session is open.
+        map[.geminiScreenFrames] = FeatureMetadata(
+            displayPriority: 20,
+            implementation: .native
+        )
         // Bluetooth radar: CoreBluetooth scan of nearby advertising devices.
         map[.bluetoothRadar] = FeatureMetadata(displayPriority: 5, implementation: .native)
         // File shelf + download watch: clipboard-tab file domain.

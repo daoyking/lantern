@@ -325,3 +325,5 @@
 "feature.geminiLiveTalk.name" = "Gemini Live：语音";
 "feature.geminiLiveTalk.desc" = "切换到语音模式：直接说话并听到回复";
 "gemini.voice.on" = "语音模式：直接开讲";
+"feature.geminiScreenFrames.name" = "Gemini Live：屏幕帧";
+"feature.geminiScreenFrames.desc" = "向 Live 会话定时发送屏幕帧（需屏幕录制权限）";

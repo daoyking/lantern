@@ -893,5 +893,75 @@ do {
                "语音模型键齐备且回默认")
 }
 
+
+// ▶33 Gemini Live M3：工具声明/toolCall 解析/toolResponse 帧/工具执行/屏幕帧协议
+do {
+    print("▶33 Gemini Live M3")
+    // setup 帧带 tools 声明
+    let setupData = GeminiLiveSession.setupMessage(config: .init(
+        apiKey: "k", model: "m", modality: .text, voiceName: nil, systemPrompt: nil))
+    let obj = try JSONSerialization.jsonObject(with: setupData) as! [String: Any]
+    let setup = obj["setup"] as! [String: Any]
+    let tools = setup["tools"] as! [[String: Any]]
+    let decls = tools[0]["functionDeclarations"] as! [[String: Any]]
+    Check.that(decls.count >= 8, "工具声明应不少于 8 个")
+    let names = Set(decls.compactMap { $0["name"] as? String })
+    Check.that(names.contains("start_timer") && names.contains("open_app") &&
+               names.contains("music_play_pause") && names.contains("battery_level"),
+               "核心工具应齐备")
+
+    // toolCall 下行解析（argsJSON 往返）
+    let callFrame: [String: Any] = ["toolCall": ["functionCalls": [
+        ["id": "call-1", "name": "start_timer", "args": ["minutes": 5]]
+    ]]]
+    let ev = GeminiLiveSession.parseServer(try! JSONSerialization.data(withJSONObject: callFrame))
+    let ok: Bool
+    if case .toolCall(let id, let name, let argsJSON) = ev {
+        let args = (try? JSONSerialization.jsonObject(with: Data(argsJSON.utf8))) as? [String: Any]
+        ok = id == "call-1" && name == "start_timer" && (args?["minutes"] as? Int) == 5
+    } else { ok = false }
+    Check.that(ok, "toolCall 应解析出 id/name/args")
+
+    // toolResponse 帧
+    let respData = GeminiLiveSession.toolResponseMessage(
+        id: "call-1", name: "start_timer", result: "{\"result\": \"ok\"}")
+    let resp = try JSONSerialization.jsonObject(with: respData) as! [String: Any]
+    let fr = (resp["toolResponse"] as! [String: Any])["functionResponses"] as! [[String: Any]]
+    Check.that(fr[0]["id"] as? String == "call-1" && fr[0]["name"] as? String == "start_timer" &&
+               ((fr[0]["response"] as! [String: Any])["result"] as? String) == "{\"result\": \"ok\"}",
+               "toolResponse 帧形状正确")
+
+    // realtimeInput.video 帧
+    let vidData = GeminiLiveSession.realtimeVideoMessage(jpeg: Data([0xFF, 0xD8]))
+    let vid = try JSONSerialization.jsonObject(with: vidData) as! [String: Any]
+    let vframe = (vid["realtimeInput"] as! [String: Any])["video"] as! [String: Any]
+    Check.that(vframe["mimeType"] as? String == "image/jpeg" &&
+               vframe["data"] as? String == Data([0xFF, 0xD8]).base64EncodedString(),
+               "video 帧应为 jpeg + base64")
+
+    // 工具执行：计时器开/关走真服务
+    let started = GeminiToolRegistry.execute(name: "start_timer", args: ["minutes": 7])
+    Check.that(started.contains("timer started for 7 minutes") &&
+               QuickTimerService.shared.endAt != nil, "start_timer 应启动计时器")
+    _ = GeminiToolRegistry.execute(name: "cancel_timer", args: [:])
+    Check.that(QuickTimerService.shared.endAt == nil, "cancel_timer 应取消计时器")
+    Check.that(GeminiToolRegistry.execute(name: "open_app", args: ["name": "NotAnApp"])
+               .contains("unknown app"), "未知 app 应报错")
+    Check.that(GeminiToolRegistry.execute(name: "no_such_tool", args: [:])
+               .contains("unknown tool"), "未知工具应报错")
+    Check.that(GeminiToolRegistry.appURL(forName: "Safari") != nil &&
+               GeminiToolRegistry.appURL(forName: "  terminal ") != nil &&
+               GeminiToolRegistry.appURL(forName: "Nonexistent") == nil,
+               "appURL 应大小写/空白容错")
+
+    // 接线
+    Check.that(AppFeature.geminiScreenFrames.group == .tools &&
+               FeatureCatalog.shared.metadata(for: .geminiScreenFrames).implementation == .native &&
+               !FeatureCatalog.shared.metadata(for: .geminiScreenFrames).isAction,
+               "geminiScreenFrames 应为 tools 组状态型 native")
+    Check.that(!DefaultsKey.geminiScreenFrames.rawValue.isEmpty,
+               "屏幕帧 defaults 键齐备")
+}
+
 cleanFeaturePrefs()
 Check.finish()
