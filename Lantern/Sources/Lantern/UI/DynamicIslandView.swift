@@ -1,12 +1,14 @@
-// DynamicIslandView.swift — the island's face: notch-shaped, live slots
+// DynamicIslandView.swift — the island's face, Sapphire-style
 //
-// Rendered inside the service's floating panel. Idle state is a plain
-// black slab matching the hardware notch — no content, no shadow, so it
-// blends in as "the original notch". Tapping expands the slab to show
-// every enabled slot (time, date, weather, volume, cpu, memory, battery,
-// network) with values; each slot is individually toggleable from the
-// island tab via plain UserDefaults keys, and the service widens the
-// panel to match, so nothing clips.
+// Idle state is a plain black slab matching the hardware notch — no
+// content, no shadow, so it blends in as "the original notch".
+//
+// Expanded state follows Sapphire's notch-hub language: one glass card
+// (ultraThinMaterial under a black veil, continuous 20pt corners) with a
+// **hero zone** right below the notch — the music player when something
+// plays, otherwise a large clock — and a scrolling chip row of live
+// metrics beneath. Chips are the Sapphire widget-card primitive: small
+// translucent rounded rectangles, icon + value, spring animations.
 
 import SwiftUI
 
@@ -37,7 +39,7 @@ struct DynamicIslandFace: View {
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, weather, music, nextEvent, timer, focus, gemini, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case time, date, weather, nextEvent, timer, focus, gemini, volume, cpu, memory, battery, network }
 
     init(service: DynamicIslandService) {
         self.service = service
@@ -51,12 +53,16 @@ struct DynamicIslandFace: View {
         _gemini = ObservedObject(wrappedValue: GeminiLiveService.shared)
     }
 
-    /// Fixed priority order — enabled slots surface left to right.
-    /// First line of the live/last Gemini reply for the island slot.
+    /// First line of the live/last Gemini reply for the island chip.
     private var replySnippet: String {
         let raw = gemini.streamingReply.isEmpty ? (gemini.lastReply ?? "") : gemini.streamingReply
         let line = raw.split(separator: "\n").first.map(String.init) ?? raw
         return line.isEmpty ? L("island.gemini", "Gemini") : line
+    }
+
+    /// Music owns the hero zone when it plays and the island shows it.
+    private var musicHeroActive: Bool {
+        showMusic && music.trackTitle != nil
     }
 
     private var enabledSlots: [IslandSlot] {
@@ -64,7 +70,6 @@ struct DynamicIslandFace: View {
         if showTime { slots.append(.time) }
         if showDate { slots.append(.date) }
         if showWeather, service.weatherTempC != nil { slots.append(.weather) }
-        if showMusic, music.trackTitle != nil { slots.append(.music) }
         if showNextEvent, calendar.nextEvent != nil { slots.append(.nextEvent) }
         if showTimer, timer.endAt != nil { slots.append(.timer) }
         if showGemini, gemini.isOpen { slots.append(.gemini) }
@@ -79,18 +84,18 @@ struct DynamicIslandFace: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // Compact = solid black (the notch illusion). Expanded = Sapphire
-            // glass: ultraThinMaterial under a translucent black veil so the
-            // widgets float on whatever is behind the island.
+            // Compact = solid black (the notch illusion). Expanded = one
+            // Sapphire glass card with continuous corners.
             ZStack {
                 if service.expanded {
-                    Rectangle().fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(.ultraThinMaterial)
                 }
-                Rectangle()
+                RoundedRectangle(cornerRadius: service.expanded ? 20 : 0, style: .continuous)
                     .fill(Color.black.opacity(service.expanded ? 0.45 : 0.92))
             }
             .overlay(
-                Rectangle()
+                RoundedRectangle(cornerRadius: service.expanded ? 20 : 0, style: .continuous)
                     .stroke(service.expanded ? Color.white.opacity(0.12) : .clear, lineWidth: 1)
             )
             // The real notch casts no shadow — only the expanded state
@@ -112,181 +117,202 @@ struct DynamicIslandFace: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: service.expanded)
     }
 
-    // MARK: - Expanded: every enabled slot with its value, below the notch
+    // MARK: - Expanded: hero + chip row (Sapphire notch-hub layout)
 
     private var expandedContent: some View {
-        HStack(spacing: 14) {
-            ForEach(Array(enabledSlots.enumerated()), id: \.offset) { _, slot in
-                expandedSlot(slot)
-            }
+        VStack(spacing: 10) {
+            hero
+            chipRow
         }
         // The hardware notch hides the top band at the screen's horizontal
         // centre — park the content just below it.
-        .padding(.top, DynamicIslandService.notchHeight + 6)
+        .padding(.top, DynamicIslandService.notchHeight + 4)
+        .padding(.bottom, 10)
+        .padding(.horizontal, 14)
+    }
+
+    /// Hero zone: music player when playing, otherwise the big clock.
+    @ViewBuilder
+    private var hero: some View {
+        if musicHeroActive {
+            musicHero
+        } else {
+            clockHero
+        }
+    }
+
+    private var musicHero: some View {
+        VStack(spacing: 5) {
+            Text(music.trackTitle ?? "")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            if let artist = music.trackArtist, !artist.isEmpty {
+                Text(artist)
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            HStack(spacing: 22) {
+                Button(action: music.previousTrack) {
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .buttonStyle(.plain)
+                Button(action: music.playPause) {
+                    Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(Color.white.opacity(0.14)))
+                }
+                .buttonStyle(.plain)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: music.isPlaying)
+                Button(action: music.nextTrack) {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var clockHero: some View {
+        VStack(spacing: 2) {
+            Text(Self.timeFormatter.string(from: service.now))
+                .font(.system(size: 26, weight: .medium, design: .rounded))
+                .foregroundColor(.white)
+            Text(Self.dateFormatter.string(from: service.now))
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.55))
+        }
+    }
+
+    /// Live metric chips — the Sapphire widget-card primitive.
+    private var chipRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(enabledSlots.enumerated()), id: \.offset) { _, slot in
+                    chip(slot)
+                }
+            }
+            .padding(.horizontal, 2)
+        }
     }
 
     @ViewBuilder
-    private func expandedSlot(_ slot: IslandSlot) -> some View {
+    private func chip(_ slot: IslandSlot) -> some View {
+        HStack(spacing: 5) {
+            chipIcon(slot)
+            chipValue(slot)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+        )
+    }
+
+    @ViewBuilder
+    private func chipIcon(_ slot: IslandSlot) -> some View {
+        switch slot {
+        case .time, .date:
+            EmptyView()
+        case .weather:
+            if let code = service.weatherCode {
+                Image(systemName: IslandWeatherService.symbol(for: code))
+                    .font(.system(size: 10))
+                    .foregroundColor(.cyan)
+            }
+        case .nextEvent:
+            Image(systemName: "calendar")
+                .font(.system(size: 10))
+                .foregroundColor(.blue)
+        case .timer:
+            Image(systemName: "timer")
+                .font(.system(size: 10))
+                .foregroundColor(.orange)
+        case .focus:
+            Image(systemName: "scope")
+                .font(.system(size: 10))
+                .foregroundColor(.purple)
+        case .gemini:
+            Image(systemName: gemini.voiceMode ? "waveform" : "sparkles")
+                .font(.system(size: 10))
+                .foregroundColor(.cyan)
+        case .volume:
+            Image(systemName: volumeIcon)
+                .font(.system(size: 10))
+                .foregroundColor(service.volumeMuted ? .orange : .white.opacity(0.85))
+        case .cpu:
+            Image(systemName: "cpu.fill")
+                .font(.system(size: 10))
+                .foregroundColor(cpuColor)
+        case .memory:
+            Image(systemName: "memorychip.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.purple)
+        case .battery:
+            Image(systemName: "bolt.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.green)
+        case .network:
+            Image(systemName: "arrow.down")
+                .font(.system(size: 10))
+                .foregroundColor(.teal)
+        }
+    }
+
+    @ViewBuilder
+    private func chipValue(_ slot: IslandSlot) -> some View {
         switch slot {
         case .time:
-            VStack(spacing: 2) {
-                Text(Self.timeFormatter.string(from: service.now))
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                    .foregroundColor(.white)
-                Text(Self.dateFormatter.string(from: service.now))
-                    .font(.system(size: 8))
-                    .foregroundColor(.white.opacity(0.55))
-            }
+            Text(Self.timeFormatter.string(from: service.now))
+                .chipText()
         case .date:
-            VStack(spacing: 2) {
-                Text(Self.dateFormatter.string(from: service.now))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white)
-                Text(L("island.date", "Date"))
-                    .font(.system(size: 8))
-                    .foregroundColor(.white.opacity(0.55))
-            }
+            Text(Self.dateFormatter.string(from: service.now))
+                .chipText()
         case .weather:
             if let temp = service.weatherTempC {
                 let code = service.weatherCode ?? 3
                 let cond = IslandWeatherService.condition(for: code)
-                metric(icon: IslandWeatherService.symbol(for: code),
-                       color: .cyan,
-                       label: L("island.weather", "Weather"),
-                       value: "\(L(cond.key, cond.english)) \(Int(temp))°")
-            }
-        case .music:
-            // Wide slot: track title over artist, transport buttons below.
-            if let title = music.trackTitle {
-                VStack(spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: 96)
-                    if let artist = music.trackArtist, !artist.isEmpty {
-                        Text(artist)
-                            .font(.system(size: 8))
-                            .foregroundColor(.white.opacity(0.55))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .frame(maxWidth: 96)
-                    }
-                    HStack(spacing: 14) {
-                        Button(action: music.previousTrack) {
-                            Image(systemName: "backward.fill")
-                                .font(.system(size: 9))
-                                .foregroundColor(.white.opacity(0.85))
-                        }
-                        .buttonStyle(.plain)
-                        Button(action: music.playPause) {
-                            Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.white)
-                        }
-                        .buttonStyle(.plain)
-                        Button(action: music.nextTrack) {
-                            Image(systemName: "forward.fill")
-                                .font(.system(size: 9))
-                                .foregroundColor(.white.opacity(0.85))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                Text("\(L(cond.key, cond.english)) \(Int(temp))°")
+                    .chipText()
             }
         case .nextEvent:
-            // Narrow slot: start time above, event title below.
             if let reading = calendar.nextEvent {
-                VStack(spacing: 2) {
-                    Text(Self.eventTimeFormatter.string(from: reading.start))
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.white)
-                    Text(reading.title)
-                        .font(.system(size: 8))
-                        .foregroundColor(.white.opacity(0.75))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: 96)
-                }
+                Text("\(Self.eventTimeFormatter.string(from: reading.start)) \(reading.title)")
+                    .chipText()
             }
         case .timer:
-            if timer.endAt != nil {
-                VStack(spacing: 2) {
-                    Text(timer.caption)
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.white)
-                    Text(L("island.timer", "Timer"))
-                        .font(.system(size: 8))
-                        .foregroundColor(.white.opacity(0.55))
-                }
-            }
+            Text(timer.caption)
+                .chipText()
         case .focus:
-            if focus.endAt != nil {
-                VStack(spacing: 2) {
-                    Text(focus.caption)
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.white)
-                    Text(L("island.focus", "Focus"))
-                        .font(.system(size: 8))
-                        .foregroundColor(.white.opacity(0.55))
-                }
-            }
+            Text("\(L("island.focus", "Focus")) \(focus.caption)")
+                .chipText()
         case .gemini:
-            if gemini.isOpen {
-                VStack(spacing: 2) {
-                    Image(systemName: gemini.voiceMode ? "waveform" : "sparkles")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.cyan)
-                    Text(replySnippet)
-                        .font(.system(size: 8))
-                        .foregroundColor(.white.opacity(0.7))
-                        .lineLimit(1)
-                        .frame(maxWidth: 120)
-                }
-            }
+            Text(replySnippet)
+                .chipText()
         case .volume:
-            VStack(spacing: 3) {
-                Image(systemName: volumeIcon)
-                    .font(.system(size: 11))
-                    .foregroundColor(service.volumeMuted ? .orange : .white)
-                volumeBar(level: service.volumeMuted
-                            ? 0
-                            : min(max(service.volumePercent / 100, 0), 1))
-                Text("\(Int(service.volumePercent))%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundColor(.white)
-            }
+            Text("\(Int(service.volumePercent))%")
+                .chipText()
         case .cpu:
-            metric(icon: "cpu.fill", color: cpuColor,
-                   label: L("island.cpu", "CPU"),
-                   value: "\(Int(service.cpuPercent))%")
+            Text("\(Int(service.cpuPercent))%")
+                .chipText()
         case .memory:
-            metric(icon: "memorychip.fill", color: .purple,
-                   label: L("island.memory", "Memory"),
-                   value: "\(Int(service.memoryPercent))%")
+            Text("\(Int(service.memoryPercent))%")
+                .chipText()
         case .battery:
-            metric(icon: "bolt.fill", color: .green,
-                   label: L("island.battery", "Battery"),
-                   value: "\(Int(service.batteryPercent))%")
+            Text("\(Int(service.batteryPercent))%")
+                .chipText()
         case .network:
-            metric(icon: "arrow.down", color: .teal,
-                   label: L("island.network", "Net"),
-                   value: String(format: "%.0fKB/s", service.networkDownKBps))
-        }
-    }
-
-    private func metric(icon: String, color: Color, label: String, value: String) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-                .foregroundColor(color)
-            Text(value)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundColor(.white)
-            Text(label)
-                .font(.system(size: 8))
-                .foregroundColor(.white.opacity(0.55))
+            Text(String(format: "%.0fKB/s", service.networkDownKBps))
+                .chipText()
         }
     }
 
@@ -310,18 +336,6 @@ struct DynamicIslandFace: View {
         }
     }
 
-    /// Thin horizontal gauge whose filled width tracks the volume level.
-    private func volumeBar(level: Double) -> some View {
-        RoundedRectangle(cornerRadius: 1.5)
-            .fill(Color.white.opacity(0.25))
-            .frame(width: 36, height: 3)
-            .overlay(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(service.volumeMuted ? Color.orange : Color.white)
-                    .frame(width: max(2, 36 * level), height: 3)
-            }
-    }
-
     // Cached formatters — the face re-renders every second via service.now.
     private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -335,11 +349,19 @@ struct DynamicIslandFace: View {
         return f
     }()
 
-    // Next-event start time in the slot's narrow caption (HH:mm; the
-    // all-day marker "•" comes from CalendarService.timeCaption).
+    // Next-event start time in the chip (HH:mm; the all-day marker "•"
+    // comes from CalendarService.timeCaption).
     private static let eventTimeFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
         return f
     }()
+}
+
+extension Text {
+    /// Shared chip typography: compact, monospaced digits for live values.
+    func chipText() -> Text {
+        self.font(.system(size: 11, weight: .medium, design: .monospaced))
+            .foregroundColor(.white)
+    }
 }

@@ -36,23 +36,11 @@ public final class DynamicIslandService: BaseFeatureService {
     }
     private static let topInset: CGFloat = 0   // flush with the top edge
 
-    /// Expanded pill grows with the number of enabled slots so nothing
-    /// clips, and is tall enough that its content band starts below the
-    /// hardware notch instead of behind it.
+    /// Expanded hub: one fixed-width glass card in the Sapphire notch-hub
+    /// style — hero zone (music or clock) over a scrolling chip row, so no
+    /// slot combination can ever clip or squeeze the layout.
     private var expandedSize: CGSize {
-        // The music slot is wider (title + artist + transport buttons).
-        let base: CGFloat = CGFloat(max(260, 130 + 46 * enabledSlotCount))
-        let musicExtra: CGFloat = musicSlotActive ? 110 : 0
-        return CGSize(width: base + musicExtra,
-                      height: Self.notchHeight + 48)
-    }
-
-    /// The music slot counts its own width; every other slot is the flat 46.
-    private var musicSlotActive: Bool {
-        guard Self.slotEnabled(.islandShowMusic, defaultIfUnset: false),
-              let music = MusicControllerService.shared,
-              music.trackTitle != nil else { return false }
-        return true
+        CGSize(width: 340, height: Self.notchHeight + 88)
     }
 
     /// Slot flags default ON for the metrics the island always showed
