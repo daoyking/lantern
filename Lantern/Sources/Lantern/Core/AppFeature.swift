@@ -79,6 +79,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case lockScreenWidgets = "lockScreenWidgets"
     case systemSounds = "systemSounds"
     case notesCapture = "notesCapture"
+    case faceID = "faceID"
 
     // ── Dynamic Island ───────────────────────────────────────────────
     case dynamicIslandEnabled = "dynamicIslandEnabled"
@@ -128,7 +129,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .keepAwake, .portControl, .processKiller,
              .fileShredder, .colorPicker, .eyeBreak, .quickTimer, .focusMode,
              .geminiLiveEnabled, .geminiLiveTalk, .geminiScreenFrames,
-             .lockScreenWidgets, .systemSounds, .notesCapture:
+             .lockScreenWidgets, .systemSounds, .notesCapture, .faceID:
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
@@ -198,6 +199,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .lockScreenWidgets: return localized("name", "Lock Screen Widgets")
         case .systemSounds: return localized("name", "System Sounds")
         case .notesCapture: return localized("name", "Clipboard → Notes")
+        case .faceID: return localized("name", "Face Lock")
         case .geminiLiveEnabled: return localized("name", "Gemini Live")
         case .geminiLiveTalk: return localized("name", "Gemini Live: Voice")
         case .geminiScreenFrames: return localized("name", "Gemini Live: Screen")
@@ -268,6 +270,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .lockScreenWidgets: return localized("desc", "Show clock and system metrics over the lock screen (experimental)")
         case .systemSounds: return localized("desc", "Play any of the classic macOS alert sounds")
         case .notesCapture: return localized("desc", "Save the clipboard text as a new Apple Notes note (asks once for Notes automation)")
+        case .faceID: return localized("desc", "Lock the panel behind webcam face verification (experimental; models from Sapphire)")
         case .geminiLiveEnabled: return localized("desc", "Chat with Google Gemini; the reply shows on the island")
         case .geminiLiveTalk: return localized("desc", "Switch the session to voice: talk and hear replies")
         case .geminiScreenFrames: return localized("desc", "Send periodic screen frames to the Live session (needs Screen Recording permission)")

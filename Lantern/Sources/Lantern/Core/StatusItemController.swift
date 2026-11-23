@@ -84,6 +84,12 @@ class StatusItemController {
     @objc func togglePanel() {
         if appDelegate?.isPanelVisible == true {
             appDelegate?.hidePanel()
+        } else if FaceIDService.panelIsLocked() {
+            // Face Lock armed: verify before the panel opens.
+            FaceIDService.shared.presentVerification(
+                onSuccess: { [weak appDelegate] in appDelegate?.showPanel() },
+                onFailure: { _ in }
+            )
         } else {
             appDelegate?.showPanel()
         }

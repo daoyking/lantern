@@ -408,6 +408,8 @@ public final class FeatureCatalog {
         map[.systemSounds] = FeatureMetadata(displayPriority: 22, implementation: .native)
         // Clipboard → Notes: one-shot osascript action.
         map[.notesCapture] = FeatureMetadata(displayPriority: 23, implementation: .native, isAction: true)
+        // Face lock: webcam face verification gates the panel (Sapphire subset).
+        map[.faceID] = FeatureMetadata(displayPriority: 24, implementation: .native)
         // Bluetooth radar: CoreBluetooth scan of nearby advertising devices.
         map[.bluetoothRadar] = FeatureMetadata(displayPriority: 5, implementation: .native)
         // File shelf + download watch: clipboard-tab file domain.

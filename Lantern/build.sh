@@ -93,6 +93,9 @@ build() {
         Sources/Lantern/Services/LockScreenWidgetsService.swift
         Sources/Lantern/Services/SystemSoundsService.swift
         Sources/Lantern/Services/NotesCaptureService.swift
+        Sources/Lantern/Services/FaceIDModels.swift
+        Sources/Lantern/Services/FaceIDController.swift
+        Sources/Lantern/Services/FaceIDService.swift
         Sources/Lantern/Services/GeminiTools.swift
         Sources/Lantern/Services/FocusService.swift
         Sources/Lantern/Services/QuickLaunchService.swift
@@ -102,6 +105,7 @@ build() {
         Sources/Lantern/UI/EyeBreakOverlay.swift
         Sources/Lantern/UI/TimerDoneCard.swift
         Sources/Lantern/UI/NearbyCards.swift
+        Sources/Lantern/UI/FaceIDViews.swift
     Sources/Lantern/UI/FocusDoneCard.swift
         Sources/Lantern/Services/EnergyMonitorService.swift
         Sources/Lantern/Services/ScrollInversionService.swift
@@ -163,6 +167,20 @@ build() {
         [[ -d "$lproj" ]] || continue
         cp -R "$lproj" "$app_path/Contents/Resources/"
     done
+
+    # Bundle Core ML models for Face ID (Sapphire subset). ArcFace ships as
+    # source (.mlpackage) and must be compiled; the liveness model ships
+    # pre-compiled (.mlmodelc) and is copied verbatim.
+    if [[ -d "Resources/Models/ArcFace.mlpackage" ]]; then
+        mkdir -p .build/models
+        if [[ ! -d ".build/models/ArcFace.mlmodelc" ]]; then
+            xcrun coremlcompiler compile "Resources/Models/ArcFace.mlpackage" .build/models >/dev/null
+        fi
+        cp -R ".build/models/ArcFace.mlmodelc" "$app_path/Contents/Resources/"
+    fi
+    if [[ -d "Resources/Models/PassiveLiveness_v4_ANE.mlmodelc" ]]; then
+        cp -R "Resources/Models/PassiveLiveness_v4_ANE.mlmodelc" "$app_path/Contents/Resources/"
+    fi
 
     log_info "Binary built at: ${app_path}"
 }

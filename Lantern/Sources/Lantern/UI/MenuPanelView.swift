@@ -148,6 +148,9 @@ struct MenuPanelView: View {
                         if group == .tools {
                             GeminiSection(service: GeminiLiveService.shared)
                         }
+                        if group == .tools {
+                            FaceIDSection(service: FaceIDService.shared)
+                        }
                         if group == .tools, runtime.activeFeatures.contains(.systemSounds) {
                             SystemSoundsSection(service: SystemSoundsService.shared)
                         }
@@ -829,6 +832,73 @@ struct BluetoothRadarSection: View {
     }
 }
 
+
+// MARK: - Face Lock (Sapphire FaceID subset)
+
+/// Enrollment status + register/erase controls for the panel lock.
+struct FaceIDSection: View {
+    @ObservedObject var service: FaceIDService
+    @State private var hasProfile = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "faceid")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(PanelSurface.accent)
+                Text(L("faceid.section.title", "Face Lock"))
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text(hasProfile
+                     ? L("faceid.section.enrolled", "Enrolled")
+                     : L("faceid.section.notEnrolled", "Not enrolled"))
+                    .font(.system(size: 10))
+                    .foregroundStyle(hasProfile ? Color.green : PanelSurface.tertiary)
+            }
+            Text(L("faceid.section.hint", "When enabled and enrolled, opening this panel asks for your face."))
+                .font(.system(size: 10))
+                .foregroundStyle(PanelSurface.tertiary)
+            HStack(spacing: 8) {
+                Button {
+                    service.presentEnrollment(onDone: { hasProfile = FaceIDService.shared.store.hasProfile })
+                    hasProfile = FaceIDService.shared.store.hasProfile
+                } label: {
+                    Text(hasProfile
+                         ? L("faceid.section.reenroll", "Re-enroll")
+                         : L("faceid.section.enroll", "Enroll Face"))
+                        .font(.system(size: 11, weight: .medium))
+                        .padding(.vertical, 5)
+                        .padding(.horizontal, 10)
+                        .background(PanelSurface.selectedTabBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                if hasProfile {
+                    Button(role: .destructive) {
+                        service.eraseProfile()
+                        hasProfile = false
+                    } label: {
+                        Text(L("faceid.section.erase", "Erase"))
+                            .font(.system(size: 11, weight: .medium))
+                            .padding(.vertical, 5)
+                            .padding(.horizontal, 10)
+                            .background(PanelSurface.selectedTabBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(10)
+        .background(PanelSurface.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
+        )
+        .onAppear { hasProfile = service.store.hasProfile }
+    }
+}
 
 // MARK: - System sound tester (Sapphire subset)
 

@@ -1081,5 +1081,76 @@ do {
                "Snapshot 应可等值比较")
 }
 
+// ▶36 Face Lock：数学/存储/阈值/接线
+do {
+    print("▶36 Face Lock")
+
+    // 余弦相似度与 L2 归一
+    let a: [Float] = [3, 4]
+    let b: [Float] = [6, 8]
+    Check.that(abs(FaceIDMath.cosine(FaceIDMath.l2Normalize(a), FaceIDMath.l2Normalize(b)) - 1) < 0.001,
+               "平行向量余弦应为 1")
+    Check.that(abs(FaceIDMath.cosine([1, 0], [0, 1])) < 0.001,
+               "正交向量余弦应为 0")
+    let norm = FaceIDMath.l2Normalize([3, 4])
+    Check.that(abs(norm[0] - 0.6) < 0.001 && abs(norm[1] - 0.8) < 0.001,
+               "L2 归一应给出单位向量")
+
+    // 档案分数 = 0.85×最大 print + 0.15×centroid
+    let identical: [Float] = [1, 0]
+    let orthogonal: [Float] = [0, 1]
+    let profile = FaceProfile(id: UUID(), name: "T", createdAt: Date(),
+                              prints: [identical, orthogonal],
+                              centroid: FaceIDMath.l2Normalize([(identical[0] + orthogonal[0]) / 2, (identical[1] + orthogonal[1]) / 2]))
+    let score = FaceIDMath.profileScore(embedding: FaceIDMath.l2Normalize(identical),
+                                        prints: profile.prints, centroid: profile.centroid)
+    Check.that(abs(score - 0.9561) < 0.01, "0.85×1+0.15×0.707≈0.956，实测 \(score)")
+
+    // TTA：镜像嵌入均值后仍归一
+    let tta = FaceIDMath.ttaEmbedding(original: [1, 1], flipped: [1, 1])
+    let ttaNorm = FaceIDMath.l2Normalize(tta)
+    Check.that(abs(FaceIDMath.cosine(tta, ttaNorm) - 1) < 0.001, "TTA 输出方向不变且可归一")
+
+    // 活体裁剪框：×1.256 上移 0.114（faceBox 与 imageSize 同为像素空间）
+    let rect = FaceIDMath.livenessCropRect(faceBox: CGRect(x: 300, y: 200, width: 120, height: 120),
+                                           imageSize: CGSize(width: 640, height: 480), cropScale: 1.5)
+    Check.that(abs(rect.width - rect.height) < 0.001 && rect.width > 120,
+               "活体裁剪应为放大正方形（120×1.256×1.5≈226），实测 \(rect.width)")
+
+    // 存储：注入固定 key 加解密往返
+    let key = SymmetricKey(size: .bits256)
+    let tmp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("faceid-test-\(UUID().uuidString).json")
+    let testStore = FaceIDStore(keyProvider: { key }, filePath: tmp)
+    let profileA = FaceProfile(id: UUID(), name: "tester", createdAt: Date(), prints: [[0.6, 0.8]], centroid: [0.6, 0.8])
+    try? testStore.save(profileA)
+    let loaded = FaceIDStore(keyProvider: { key }, filePath: tmp)
+    loaded.load()
+    Check.that(loaded.hasProfile && loaded.profile?.name == "tester" &&
+               loaded.profile?.prints.first == profileA.prints.first,
+               "注入 key 应可往返加解密")
+    // 错 key 拒解
+    let wrongStore = FaceIDStore(keyProvider: { SymmetricKey(size: .bits256) }, filePath: tmp)
+    wrongStore.load()
+    Check.that(!wrongStore.hasProfile, "错误 key 应解密失败并清空")
+    testStore.erase()
+    try? FileManager.default.removeItem(at: tmp)
+
+    // 阈值常量（与 Sapphire 一致）
+    Check.that(FaceIDConfig.identityThreshold == 0.48 &&
+               FaceIDConfig.consecutiveFrames == 3 &&
+               FaceIDConfig.minFacePixels == 64,
+               "阈值常量应保持 Sapphire 原值")
+
+    // 接线：tools 组状态型 native
+    Check.that(AppFeature.faceID.group == .tools &&
+               !FeatureCatalog.shared.metadata(for: .faceID).isAction &&
+               FeatureCatalog.shared.metadata(for: .faceID).implementation == .native,
+               "faceID 应为 tools 状态型 native")
+
+    // 面板门控：feature 未开 → 不锁
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.featureEnabledKey(AppFeature.faceID.rawValue))
+    Check.that(FaceIDService.panelIsLocked() == false, "feature 未开时面板不应上锁")
+}
+
 cleanFeaturePrefs()
 Check.finish()

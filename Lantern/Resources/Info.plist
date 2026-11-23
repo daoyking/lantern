@@ -43,5 +43,7 @@
 	</array>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Lantern uses the camera for optional Face Lock verification. Frames are processed on-device and never stored.</string>
 </dict>
 </plist>

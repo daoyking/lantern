@@ -1,3 +1,5 @@
 "NSLocationWhenInUseUsageDescription" = "Lantern 使用你的位置获取当地天气并显示在悬浮岛上。位置仅用于天气查询，不会被存储或上传。";
 "NSCalendarsUsageDescription" = "Lantern 读取日历以在悬浮岛显示下一个日程。仅只读，不会存储或上传。";
 "NSLocalNetworkUsageDescription" = "Lantern 可与本局域网内的其他 Lantern 实例互传文本片段。未经您确认不会发送任何内容。";
+
+"NSCameraUsageDescription" = "Lantern 使用摄像头进行可选的人脸解锁验证；画面仅在本机处理，不会存储。";

@@ -367,6 +367,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         runtime.register(.notesCapture, service: NotesCaptureService.shared) {
             NotesCaptureService.shared.capture()
         }
+        // Face lock — webcam verification gates the panel when armed.
+        runtime.register(.faceID, service: FaceIDService.shared, binding: {})
 
         // Bluetooth radar — toggle runs a CoreBluetooth nearby scan.
         runtime.register(.bluetoothRadar, service: BluetoothRadarService.shared, binding: {})
