@@ -77,6 +77,9 @@ public final class DynamicIslandService: BaseFeatureService {
         // Timer slot follows the quickTimer feature toggle + an active countdown.
         if UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey("quickTimer")),
            QuickTimerService.shared.endAt != nil { count += 1 }
+        // Gemini slot follows its island key + an open Live session.
+        if Self.slotEnabled(.islandShowGemini, defaultIfUnset: false),
+           GeminiLiveService.shared.isOpen { count += 1 }
         // Focus slot: same pattern with the focusMode toggle.
         if UserDefaults.standard.bool(forKey: DefaultsKey.featureEnabledKey("focusMode")),
            FocusService.shared.endAt != nil { count += 1 }

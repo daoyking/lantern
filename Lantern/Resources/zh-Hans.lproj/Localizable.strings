@@ -308,3 +308,17 @@
 "radar.off" = "蓝牙未开启";
 "radar.rescan" = "重新扫描";
 "downloads.openHint" = "单击显示，双击打开";
+"feature.geminiLiveEnabled.name" = "Gemini Live";
+"feature.geminiLiveEnabled.desc" = "与 Google Gemini 对话，回复显示在悬浮岛";
+"feature.dynamicIslandShowGemini.name" = "悬浮岛：Gemini";
+"feature.dynamicIslandShowGemini.desc" = "在悬浮岛显示 Gemini 回复摘要";
+"island.gemini" = "Gemini";
+"gemini.key.hint" = "粘贴 Google AI Studio API Key（明文存本机）";
+"gemini.key.save" = "保存";
+"gemini.key.missing" = "缺少 API Key：请到 aistudio.google.com 免费申请";
+"gemini.state.open" = "已连接";
+"gemini.state.connecting" = "连接中…";
+"gemini.state.closed" = "已断开";
+"gemini.placeholder" = "问点什么…";
+"gemini.send" = "发送";
+"gemini.empty" = "尚未对话";

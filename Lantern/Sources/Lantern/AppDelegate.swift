@@ -354,6 +354,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Focus session — toggle runs a 25-minute block on the island.
         runtime.register(.focusMode, service: FocusService.shared, binding: {})
 
+        // Gemini Live — toggle connects/disconnects the Live session.
+        runtime.register(.geminiLiveEnabled, service: GeminiLiveService.shared, binding: {})
+
         // Bluetooth radar — toggle runs a CoreBluetooth nearby scan.
         runtime.register(.bluetoothRadar, service: BluetoothRadarService.shared, binding: {})
 
@@ -429,6 +432,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (AppFeature.dynamicIslandShowWeather, DefaultsKey.islandShowWeather, false),
             (AppFeature.dynamicIslandShowMusic, DefaultsKey.islandShowMusic, false),
             (AppFeature.dynamicIslandShowNextEvent, DefaultsKey.islandShowNextEvent, false),
+            (AppFeature.dynamicIslandShowGemini, DefaultsKey.islandShowGemini, false),
         ] {
             runtime.register(feature, service: PreferenceToggleService(
                 feature: feature,

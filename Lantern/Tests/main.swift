@@ -747,5 +747,77 @@ do {
     UserDefaults.standard.removeObject(forKey: ClipboardService.storageKey)
 }
 
+// ▶31 Gemini Live：协议帧构造/解析、特征接线、defaults 键
+do {
+    print("▶31 Gemini Live")
+    // setup 帧：模型、TEXT 模态、可选 systemInstruction
+    let setupData = GeminiLiveSession.setupMessage(config: .init(
+        apiKey: "k", model: "gemini-2.0-flash-live-001", systemPrompt: "be brief"))
+    let setupObj = try JSONSerialization.jsonObject(with: setupData) as! [String: Any]
+    let setup = setupObj["setup"] as! [String: Any]
+    Check.that(setup["model"] as? String == "models/gemini-2.0-flash-live-001",
+               "setup 帧应带 models/ 前缀模型名")
+    let gen = setup["generationConfig"] as! [String: Any]
+    Check.that((gen["responseModalities"] as? [String]) == ["TEXT"],
+               "M1 setup 应声明 TEXT 模态")
+    let si = setup["systemInstruction"] as! [String: Any]
+    Check.that(((si["parts"] as! [[String: Any]])[0])["text"] as? String == "be brief",
+               "setup 帧应携带 systemInstruction")
+    let setupNoPrompt = GeminiLiveSession.setupMessage(
+        config: .init(apiKey: "k", model: "m", systemPrompt: nil))
+    let noPromptObj = try JSONSerialization.jsonObject(with: setupNoPrompt) as! [String: Any]
+    Check.that((noPromptObj["setup"] as! [String: Any])["systemInstruction"] == nil,
+               "无 system prompt 时 setup 帧不应带 systemInstruction")
+
+    // clientContent 帧
+    let turnData = GeminiLiveSession.clientContentMessage(text: "hi")
+    let turn = try JSONSerialization.jsonObject(with: turnData) as! [String: Any]
+    let cc = turn["clientContent"] as! [String: Any]
+    let turns = cc["turns"] as! [[String: Any]]
+    Check.that(turns[0]["role"] as? String == "user" &&
+               ((turns[0]["parts"] as! [[String: Any]])[0])["text"] as? String == "hi" &&
+               (cc["turnComplete"] as? Bool) == true,
+               "clientContent 帧应为 user turn + turnComplete")
+
+    // 下行解析
+    func frame(_ json: String) -> GeminiLiveSession.ServerEvent? {
+        GeminiLiveSession.parseServer(Data(json.utf8))
+    }
+    Check.that(frame(#"{"setupComplete":{}}"#) == .setupComplete, "setupComplete 解析")
+    Check.that(frame(#"{"serverContent":{"modelTurn":{"parts":[{"text":"he"},{"text":"llo"}]}}}"#)
+               == .modelText("hello"), "modelTurn 文本应拼接")
+    Check.that(frame(#"{"serverContent":{"turnComplete":true}}"#) == .turnComplete,
+               "turnComplete 解析")
+    Check.that(frame(#"{"serverContent":{"interrupted":true}}"#) == .interrupted,
+               "interrupted 解析")
+    Check.that(frame(#"{"error":{"message":"boom"}}"#) == .error("boom"), "error 解析")
+    Check.that(frame(#"{"serverContent":{"other":1}}"#) == nil &&
+               frame("not json") == nil,
+               "未知形状/坏 JSON 应返回 nil")
+    Check.that(frame(#"{"serverContent":{"outputTranscription":{"text":"hi","finished":false}}}"#)
+               == .outputTranscription("hi", finished: false), "outputTranscription 解析")
+
+    // 特征接线
+    Check.that(AppFeature.geminiLiveEnabled.group == .tools &&
+               FeatureCatalog.shared.metadata(for: .geminiLiveEnabled).implementation == .native &&
+               !FeatureCatalog.shared.metadata(for: .geminiLiveEnabled).isAction,
+               "geminiLiveEnabled 应为 tools 组状态型 native")
+    Check.that(AppFeature.dynamicIslandShowGemini.group == .dynamicIsland,
+               "dynamicIslandShowGemini 应属灵动岛组")
+
+    // defaults 键 + service 快照
+    Check.that(!DefaultsKey.islandShowGemini.rawValue.isEmpty &&
+               !DefaultsKey.geminiAPIKey.rawValue.isEmpty &&
+               !DefaultsKey.geminiModel.rawValue.isEmpty,
+               "Gemini defaults 键齐备")
+    let gemini = GeminiLiveService.shared
+    UserDefaults.standard.set("  test-key  ", forKey: DefaultsKey.geminiAPIKey.rawValue)
+    Check.that(gemini.apiKey == "test-key", "API key 应去空白")
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.geminiModel.rawValue)
+    Check.that(gemini.model == GeminiLiveService.defaultModel, "未设模型应回默认")
+    Check.that(!gemini.isOpen, "未连接时 isOpen 为 false")
+    UserDefaults.standard.removeObject(forKey: DefaultsKey.geminiAPIKey.rawValue)
+}
+
 cleanFeaturePrefs()
 Check.finish()

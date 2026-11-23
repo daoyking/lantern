@@ -72,6 +72,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case eyeBreak = "eyeBreak"
     case quickTimer = "quickTimer"
     case focusMode = "focusMode"
+    case geminiLiveEnabled = "geminiLiveEnabled"
 
     // ── Dynamic Island ───────────────────────────────────────────────
     case dynamicIslandEnabled = "dynamicIslandEnabled"
@@ -85,6 +86,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case dynamicIslandShowWeather = "dynamicIslandShowWeather"
     case dynamicIslandShowMusic = "dynamicIslandShowMusic"
     case dynamicIslandShowNextEvent = "dynamicIslandShowNextEvent"
+    case dynamicIslandShowGemini = "dynamicIslandShowGemini"
 
     /// Unique ID for SwiftUI list identification
     public var id: String { rawValue }
@@ -118,12 +120,13 @@ public enum AppFeature: String, CaseIterable, Identifiable {
              .networkMonitor, .batteryDisplay:
             return .energyDisplay
         case .keepAwake, .portControl, .processKiller,
-             .fileShredder, .colorPicker, .eyeBreak, .quickTimer, .focusMode:
+             .fileShredder, .colorPicker, .eyeBreak, .quickTimer, .focusMode,
+             .geminiLiveEnabled:
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
              .dynamicIslandShowMemory, .dynamicIslandShowNetwork, .dynamicIslandShowWeather,
-             .dynamicIslandShowMusic, .dynamicIslandShowNextEvent:
+             .dynamicIslandShowMusic, .dynamicIslandShowNextEvent, .dynamicIslandShowGemini:
             return .dynamicIsland
         }
     }
@@ -184,6 +187,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .launchCalendar: return localized("name", "Open Calendar")
         case .launchMail: return localized("name", "Open Mail")
         case .quickTimer: return localized("name", "Quick Timer")
+        case .geminiLiveEnabled: return localized("name", "Gemini Live")
+        case .dynamicIslandShowGemini: return localized("name", "Island: Gemini")
         case .focusMode: return localized("name", "Focus Session")
         case .timerStart5: return localized("name", "Timer 5 min")
         case .timerStart10: return localized("name", "Timer 10 min")
@@ -246,6 +251,8 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .launchCalendar: return localized("desc", "Launch the Calendar app")
         case .launchMail: return localized("desc", "Launch the Mail app")
         case .quickTimer: return localized("desc", "Enable quick timers; the countdown shows on the island")
+        case .geminiLiveEnabled: return localized("desc", "Chat with Google Gemini; the reply shows on the island")
+        case .dynamicIslandShowGemini: return localized("desc", "Show the Gemini reply snippet in the island")
         case .focusMode: return localized("desc", "25-minute focus session on the island; tries to mute notifications (legacy hook)")
         case .timerStart5: return localized("desc", "Start a 5-minute timer (tap again to cancel)")
         case .timerStart10: return localized("desc", "Start a 10-minute timer (tap again to cancel)")

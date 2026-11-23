@@ -19,12 +19,14 @@ struct DynamicIslandFace: View {
     @ObservedObject var calendar: CalendarService
     // Quick timer: observed so the countdown repaints on the 1s metric tick.
     @ObservedObject var timer: QuickTimerService
+    @ObservedObject var gemini: GeminiLiveService
     @ObservedObject var focus: FocusService
     @AppStorage(DefaultsKey.islandShowTime.rawValue) private var showTime = true
     @AppStorage(DefaultsKey.islandShowDate.rawValue) private var showDate = false
     @AppStorage(DefaultsKey.islandShowWeather.rawValue) private var showWeather = false
     @AppStorage(DefaultsKey.islandShowMusic.rawValue) private var showMusic = false
     @AppStorage(DefaultsKey.islandShowNextEvent.rawValue) private var showNextEvent = false
+    @AppStorage(DefaultsKey.islandShowGemini.rawValue) private var showGemini = false
     // Timer slot follows the quickTimer feature toggle, not a dedicated key.
     @AppStorage(DefaultsKey.featureEnabledKey("quickTimer")) private var showTimer = false
     // Focus slot likewise follows the focusMode feature toggle.
@@ -35,7 +37,7 @@ struct DynamicIslandFace: View {
     @AppStorage(DefaultsKey.islandShowBattery.rawValue) private var showBattery = true
     @AppStorage(DefaultsKey.islandShowNetwork.rawValue) private var showNetwork = true
 
-    private enum IslandSlot { case time, date, weather, music, nextEvent, timer, focus, volume, cpu, memory, battery, network }
+    private enum IslandSlot { case time, date, weather, music, nextEvent, timer, focus, gemini, volume, cpu, memory, battery, network }
 
     init(service: DynamicIslandService) {
         self.service = service
@@ -46,9 +48,17 @@ struct DynamicIslandFace: View {
         _calendar = ObservedObject(wrappedValue: CalendarService.shared)
         _timer = ObservedObject(wrappedValue: QuickTimerService.shared)
         _focus = ObservedObject(wrappedValue: FocusService.shared)
+        _gemini = ObservedObject(wrappedValue: GeminiLiveService.shared)
     }
 
     /// Fixed priority order — enabled slots surface left to right.
+    /// First line of the live/last Gemini reply for the island slot.
+    private var replySnippet: String {
+        let raw = gemini.streamingReply.isEmpty ? (gemini.lastReply ?? "") : gemini.streamingReply
+        let line = raw.split(separator: "\n").first.map(String.init) ?? raw
+        return line.isEmpty ? L("island.gemini", "Gemini") : line
+    }
+
     private var enabledSlots: [IslandSlot] {
         var slots: [IslandSlot] = []
         if showTime { slots.append(.time) }
@@ -57,6 +67,7 @@ struct DynamicIslandFace: View {
         if showMusic, music.trackTitle != nil { slots.append(.music) }
         if showNextEvent, calendar.nextEvent != nil { slots.append(.nextEvent) }
         if showTimer, timer.endAt != nil { slots.append(.timer) }
+        if showGemini, gemini.isOpen { slots.append(.gemini) }
         if showFocus, focus.endAt != nil { slots.append(.focus) }
         if showVolume, service.volumePercent >= 0 { slots.append(.volume) }
         if showCPU { slots.append(.cpu) }
@@ -207,6 +218,19 @@ struct DynamicIslandFace: View {
                     Text(L("island.focus", "Focus"))
                         .font(.system(size: 8))
                         .foregroundColor(.white.opacity(0.55))
+                }
+            }
+        case .gemini:
+            if gemini.isOpen {
+                VStack(spacing: 2) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.cyan)
+                    Text(replySnippet)
+                        .font(.system(size: 8))
+                        .foregroundColor(.white.opacity(0.7))
+                        .lineLimit(1)
+                        .frame(maxWidth: 120)
                 }
             }
         case .volume:

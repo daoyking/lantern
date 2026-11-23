@@ -87,6 +87,7 @@ build() {
         Sources/Lantern/Services/CalendarService.swift
         Sources/Lantern/Services/EyeBreakService.swift
         Sources/Lantern/Services/QuickTimerService.swift
+        Sources/Lantern/Services/GeminiLiveService.swift
         Sources/Lantern/Services/FocusService.swift
         Sources/Lantern/Services/QuickLaunchService.swift
         Sources/Lantern/Services/FileShelfService.swift

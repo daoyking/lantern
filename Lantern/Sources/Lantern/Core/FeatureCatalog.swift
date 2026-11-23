@@ -376,6 +376,16 @@ public final class FeatureCatalog {
             implementation: .native,
             isAction: true
         )
+        // Gemini Live: the toggle IS the WebSocket session (text mode in M1).
+        map[.geminiLiveEnabled] = FeatureMetadata(
+            displayPriority: 18,
+            implementation: .native
+        )
+        map[.dynamicIslandShowGemini] = FeatureMetadata(
+            installedByDefault: true,
+            displayPriority: 11,
+            implementation: .native
+        )
         // Bluetooth radar: CoreBluetooth scan of nearby advertising devices.
         map[.bluetoothRadar] = FeatureMetadata(displayPriority: 5, implementation: .native)
         // File shelf + download watch: clipboard-tab file domain.

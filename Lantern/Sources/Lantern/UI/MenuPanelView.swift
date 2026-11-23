@@ -142,6 +142,9 @@ struct MenuPanelView: View {
                         if group == .sound, let perApp = PerAppAudioService.shared {
                             PerAppAudioSection(service: perApp)
                         }
+                        if group == .tools, let gemini = GeminiLiveService.shared {
+                            GeminiSection(service: gemini)
+                        }
                         ForEach(features, id: \.self) { feature in
                             FeatureRow(feature: feature)
                         }
@@ -814,5 +817,140 @@ struct BluetoothRadarSection: View {
         .padding(.vertical, 8)
         .background(PanelSurface.cardBackground)
         .cornerRadius(8)
+    }
+}
+
+
+// MARK: - Gemini Live (M1: text turns)
+
+/// API-key entry, connection state, text input and reply area. Lives at the
+/// top of the Tools tab; the feature toggle itself drives the connection.
+struct GeminiSection: View {
+    @ObservedObject var service: GeminiLiveService
+    @StateObject private var runtime = FeatureRuntime.shared
+    @AppStorage(DefaultsKey.geminiAPIKey.rawValue) private var storedKey = ""
+    @State private var draftKey = ""
+    @State private var draft = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(PanelSurface.accent)
+                Text(L("feature.geminiLiveEnabled.name", "Gemini Live"))
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                stateBadge
+            }
+
+            if storedKey.isEmpty {
+                hintBox
+            } else {
+                replyArea
+                inputRow
+            }
+        }
+        .padding(10)
+        .background(PanelSurface.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
+        )
+    }
+
+    private var stateBadge: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(stateColor)
+                .frame(width: 6, height: 6)
+            Text(stateLabel)
+                .font(.system(size: 10))
+                .foregroundStyle(PanelSurface.tertiary)
+        }
+    }
+
+    private var stateColor: Color {
+        switch service.sessionState {
+        case .open: return .green
+        case .connecting: return .orange
+        case .idle: return PanelSurface.tertiary
+        case .closed: return .red
+        }
+    }
+
+    private var stateLabel: String {
+        switch service.sessionState {
+        case .open: return L("gemini.state.open", "Connected")
+        case .connecting: return L("gemini.state.connecting", "Connecting…")
+        case .idle: return L("gemini.state.closed", "Disconnected")
+        case .closed: return L("gemini.state.closed", "Disconnected")
+        }
+    }
+
+    private var hintBox: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("gemini.key.hint", "Paste a Google AI Studio API key (stored in plain text on this Mac)"))
+                .font(.system(size: 10))
+                .foregroundStyle(PanelSurface.secondary)
+            Text(L("gemini.key.missing", "Get a free key at aistudio.google.com"))
+                .font(.system(size: 9))
+                .foregroundStyle(PanelSurface.tertiary)
+            HStack(spacing: 6) {
+                SecureField("", text: $draftKey)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 11))
+                    .padding(6)
+                    .background(Color.white.opacity(0.06))
+                    .cornerRadius(6)
+                Button(L("gemini.key.save", "Save")) {
+                    storedKey = draftKey
+                    draftKey = ""
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(PanelSurface.accent)
+                .disabled(draftKey.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+    }
+
+    private var replyArea: some View {
+        let text: String = {
+            if !service.streamingReply.isEmpty { return service.streamingReply }
+            if let last = service.lastReply { return last }
+            return L("gemini.empty", "No conversation yet")
+        }()
+        return Text(text)
+            .font(.system(size: 11))
+            .foregroundStyle(service.lastReply == nil && service.streamingReply.isEmpty
+                             ? PanelSurface.tertiary : PanelSurface.primary)
+            .lineLimit(4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var inputRow: some View {
+        HStack(spacing: 6) {
+            TextField(L("gemini.placeholder", "Ask something…"), text: $draft)
+                .textFieldStyle(.plain)
+                .font(.system(size: 11))
+                .padding(6)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(6)
+                .onSubmit(send)
+            Button(action: send) {
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(PanelSurface.accent)
+            .disabled(!service.isOpen || draft.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+    }
+
+    private func send() {
+        service.send(draft)
+        draft = ""
     }
 }
