@@ -113,10 +113,17 @@ public final class DynamicIslandService: BaseFeatureService {
     // MARK: - Public API (wired from the island face)
 
     public func toggleExpanded() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            expanded.toggle()
+        // Defer out of the current display cycle. Changing the panel frame
+        // while SwiftUI is invalidating safe area inside the same transaction
+        // reenters AppKit's constraint pass (_postWindowNeedsUpdateConstraints
+        // throws from the display-cycle layout observer) and aborts the app.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                self.expanded.toggle()
+            }
+            self.resizePanel()
         }
-        resizePanel()
     }
 
     /// Grow/shrink the panel around its centre-x with the top edge pinned,
@@ -130,11 +137,10 @@ public final class DynamicIslandService: BaseFeatureService {
             width: size.width,
             height: size.height
         )
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.3
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            panel.animator().setFrame(frame, display: true)
-        }
+        // Instant frame move, no animator(): forcing a display inside the
+        // click's display cycle is what trips the constraint reentrancy. The
+        // content still springs — the withAnimation above drives it.
+        panel.setFrame(frame, display: false)
     }
 
     // MARK: - Panel
