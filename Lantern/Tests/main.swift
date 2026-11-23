@@ -2,6 +2,7 @@
 // Compiled directly with swiftc (bypasses SwiftPM's sandboxed manifest step).
 // Mirrors the XCTest cases so logic can be verified in this environment.
 
+import CryptoKit
 import Foundation
 import EventKit
 
@@ -961,6 +962,69 @@ do {
                "geminiScreenFrames 应为 tools 组状态型 native")
     Check.that(!DefaultsKey.geminiScreenFrames.rawValue.isEmpty,
                "屏幕帧 defaults 键齐备")
+}
+
+
+// ▶34 Nearby Share：帧协议/密钥协商/加密往返/分块重组/接线
+do {
+    print("▶34 Nearby Share")
+    // 帧构造/解析往返
+    let frames: [NearbyFrame] = [
+        .hello(name: "MacBook", pubKey: "abc123"),
+        .offer(id: "t1", sender: "A", kind: "text", text: "hi there", fileNames: []),
+        .accept(id: "t1"),
+        .reject(id: "t2"),
+        .chunk(id: "t1", index: 3, data: Data([0x00, 0xFF, 0x7F, 0x80]), last: false),
+        .chunk(id: "t1", index: 9, data: Data([0x01]), last: true),
+        .done(id: "t1"),
+    ]
+    for frame in frames {
+        Check.that(NearbyFrame.parse(frame.data) == frame,
+                   "帧往返应等值：\(frame)")
+    }
+    Check.that(NearbyFrame.parse(Data("junk".utf8)) == nil &&
+               NearbyFrame.parse(Data(#"{"t":"unknown"}"#.utf8)) == nil,
+               "坏帧应解析为 nil")
+
+    // 密钥协商：双方从固定私钥推导出相同会话密钥
+    let privA = try! P256.KeyAgreement.PrivateKey(rawRepresentation: Data((0..<32).map { UInt8($0 + 1) }))
+    let privB = try! P256.KeyAgreement.PrivateKey(rawRepresentation: Data((0..<32).map { UInt8($0 + 100) }))
+    let keyA = NearbyCrypto.sessionKey(privateKey: privA, peerPublicKeyData: privB.publicKey.x963Representation)
+    let keyB = NearbyCrypto.sessionKey(privateKey: privB, peerPublicKeyData: privA.publicKey.x963Representation)
+    Check.that(keyA != nil && keyB != nil &&
+               keyA!.withUnsafeBytes { Data($0) } == keyB!.withUnsafeBytes { Data($0) },
+               "双方应推导出相同会话密钥")
+
+    // 加密往返 + 篡改检测
+    let secret = Data("round trip".utf8)
+    let sealedBox = NearbyCrypto.seal(secret, key: keyA!)
+    Check.that(sealedBox != nil && NearbyCrypto.open(sealedBox!, key: keyB!) == secret,
+               "A 加密 B 应能解密原文")
+    var tampered = sealedBox!
+    tampered[tampered.count - 1] ^= 0xFF
+    Check.that(NearbyCrypto.open(tampered, key: keyB!) == nil,
+               "被篡改的帧应解密失败")
+
+    // 4 字节大端长度前缀
+    let wire = NearbyCrypto.prefixed(Data([0xAA, 0xBB]))
+    Check.that(Array(wire.prefix(4)) == [0, 0, 0, 2] &&
+               NearbyCrypto.unprefix([UInt8](wire))?.payload == Data([0xAA, 0xBB]) &&
+               NearbyCrypto.unprefix([0, 0]) == nil,
+               "长度前缀编解码应正确")
+
+    // 分块重组
+    let long = Data((0..<200_000).map { UInt8($0 % 251) })
+    let chunks = NearbyPeerSession.chunks(of: long)
+    Check.that(chunks.count == 5 && chunks.allSatisfy { $0.count <= NearbyShareService.chunkSize } &&
+               Data(chunks.joined()) == long,
+               "200KB 应分 5 块且重组等值")
+    Check.that(NearbyPeerSession.chunks(of: Data()) == [Data()], "空数据应为单空块")
+
+    // 接线：clipboard 组状态型 native
+    Check.that(AppFeature.nearbyShare.group == .clipboard &&
+               FeatureCatalog.shared.metadata(for: .nearbyShare).implementation == .native &&
+               !FeatureCatalog.shared.metadata(for: .nearbyShare).isAction,
+               "nearbyShare 应为 clipboard 组状态型 native")
 }
 
 cleanFeaturePrefs()

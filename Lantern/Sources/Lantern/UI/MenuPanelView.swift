@@ -139,6 +139,9 @@ struct MenuPanelView: View {
                         if group == .clipboard, let clipboard = ClipboardService.shared {
                             ClipboardHistorySection(service: clipboard)
                         }
+                        if group == .clipboard, runtime.activeFeatures.contains(.nearbyShare) {
+                            NearbySection()
+                        }
                         if group == .sound, let perApp = PerAppAudioService.shared {
                             PerAppAudioSection(service: perApp)
                         }
@@ -956,5 +959,80 @@ struct GeminiSection: View {
     private func send() {
         service.send(draft)
         draft = ""
+    }
+}
+
+
+// MARK: - Nearby Share (Lantern↔Lantern text over LAN)
+
+struct NearbySection: View {
+    @StateObject private var service = NearbyShareService.shared
+    @State private var copiedTick = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "personalhotspot")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(PanelSurface.accent)
+                Text(L("feature.nearbyShare.name", "Nearby Share"))
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text("\(service.peers.count)")
+                    .font(.system(size: 10))
+                    .foregroundStyle(PanelSurface.tertiary)
+            }
+
+            if service.peers.isEmpty {
+                Text(L("nearby.hint.empty", "Looking for other Lanterns on this network…"))
+                    .font(.system(size: 10))
+                    .foregroundStyle(PanelSurface.tertiary)
+            } else {
+                ForEach(service.peers) { peer in
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 6, height: 6)
+                        Text(peer.name)
+                            .font(.system(size: 11))
+                            .foregroundStyle(PanelSurface.primary)
+                            .lineLimit(1)
+                        Spacer()
+                        Button {
+                            UIPasteboardLikeSend(peer: peer)
+                        } label: {
+                            Image(systemName: copiedTick ? "checkmark" : "paperplane.fill")
+                                .font(.system(size: 10))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(PanelSurface.accent)
+                        .help(L("nearby.send", "Send clipboard text"))
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            if let error = service.lastError {
+                Text(error)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.orange)
+                    .lineLimit(1)
+            }
+        }
+        .padding(10)
+        .background(PanelSurface.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(PanelSurface.cardBorder, lineWidth: 1)
+        )
+    }
+
+    /// Sends the current general pasteboard string to the peer.
+    private func UIPasteboardLikeSend(peer: NearbyShareService.Peer) {
+        let text = NSPasteboard.general.string(forType: .string) ?? ""
+        service.sendText(text, to: peer.id)
+        copiedTick = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copiedTick = false }
     }
 }

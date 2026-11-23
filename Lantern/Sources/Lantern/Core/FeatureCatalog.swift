@@ -361,6 +361,11 @@ public final class FeatureCatalog {
             displayPriority: 7,
             implementation: .native
         )
+        // Nearby share: Lantern-to-Lantern text over the local network.
+        map[.nearbyShare] = FeatureMetadata(
+            displayPriority: 11,
+            implementation: .native
+        )
         map[.timerStart5] = FeatureMetadata(
             displayPriority: 8,
             implementation: .native,

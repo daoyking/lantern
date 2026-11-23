@@ -327,3 +327,12 @@
 "gemini.voice.on" = "语音模式：直接开讲";
 "feature.geminiScreenFrames.name" = "Gemini Live：屏幕帧";
 "feature.geminiScreenFrames.desc" = "向 Live 会话定时发送屏幕帧（需屏幕录制权限）";
+"feature.nearbyShare.name" = "Nearby 分享";
+"feature.nearbyShare.desc" = "在局域网内的 Lantern 之间互传文本片段";
+"nearby.hint.off" = "开启 Nearby 分享后可发现同一网络的其他 Lantern";
+"nearby.hint.empty" = "正在搜索同一网络的其他 Lantern…";
+"nearby.send" = "发送剪贴板文本";
+"nearby.accept" = "接受";
+"nearby.reject" = "拒绝";
+"nearby.received" = "已收到来自 %@";
+"nearby.preview.empty" = "文本片段";

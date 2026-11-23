@@ -89,6 +89,7 @@ build() {
         Sources/Lantern/Services/QuickTimerService.swift
         Sources/Lantern/Services/GeminiLiveService.swift
         Sources/Lantern/Services/GeminiAudioPipe.swift
+        Sources/Lantern/Services/NearbyShareService.swift
         Sources/Lantern/Services/GeminiTools.swift
         Sources/Lantern/Services/FocusService.swift
         Sources/Lantern/Services/QuickLaunchService.swift
@@ -97,6 +98,7 @@ build() {
         Sources/Lantern/Services/BluetoothRadarService.swift
         Sources/Lantern/UI/EyeBreakOverlay.swift
         Sources/Lantern/UI/TimerDoneCard.swift
+        Sources/Lantern/UI/NearbyCards.swift
     Sources/Lantern/UI/FocusDoneCard.swift
         Sources/Lantern/Services/EnergyMonitorService.swift
         Sources/Lantern/Services/ScrollInversionService.swift

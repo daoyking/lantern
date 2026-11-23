@@ -35,6 +35,12 @@
 	<string>Lantern reads your calendar to show the next upcoming event on the island. Read-only; nothing is stored or uploaded.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Lantern uses your location to show local weather in the island. Location is only used for weather lookups and is never stored or uploaded.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Lantern can share text snippets with other Lantern instances on this local network. Nothing is sent without your confirmation.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_lantern-share._tcp</string>
+	</array>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>

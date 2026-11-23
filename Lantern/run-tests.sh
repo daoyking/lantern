@@ -37,6 +37,7 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Services/QuickTimerService.swift \
     Sources/Lantern/Services/GeminiLiveService.swift \
     Sources/Lantern/Services/GeminiAudioPipe.swift \
+    Sources/Lantern/Services/NearbyShareService.swift \
     Sources/Lantern/Services/GeminiTools.swift \
     Sources/Lantern/Services/FocusService.swift \
     Sources/Lantern/Services/QuickLaunchService.swift \
@@ -46,6 +47,7 @@ xcrun swiftc -target arm64-apple-macosx14.0 -sdk "$SDK" \
     Sources/Lantern/Services/ClipboardService.swift \
     Sources/Lantern/UI/EyeBreakOverlay.swift \
     Sources/Lantern/UI/TimerDoneCard.swift \
+    Sources/Lantern/UI/NearbyCards.swift \
     Sources/Lantern/UI/FocusDoneCard.swift \
     Sources/Lantern/UI/DynamicIslandView.swift \
     Tests/main.swift

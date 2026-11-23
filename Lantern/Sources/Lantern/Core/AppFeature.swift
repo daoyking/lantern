@@ -27,6 +27,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case clipboardHistory = "clipboardHistory"
     case pasteAsPlainText = "pasteAsPlainText"
     case syncClipboardAcrossDevices = "syncClipboardAcrossDevices"
+    case nearbyShare = "nearbyShare"
 
     // ── Sound ────────────────────────────────────────────────────────
     case volumeMixer = "volumeMixer"
@@ -104,7 +105,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
             return .mouseKeyboard
         case .fileShelf, .downloadMonitor:
             return .clipboard
-        case .clipboardHistory, .pasteAsPlainText, .syncClipboardAcrossDevices:
+        case .clipboardHistory, .pasteAsPlainText, .syncClipboardAcrossDevices, .nearbyShare:
             return .clipboard
         case .launchSafari, .launchTerminal, .launchNotes,
              .launchCalculator, .launchCalendar, .launchMail:
@@ -189,6 +190,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .launchCalendar: return localized("name", "Open Calendar")
         case .launchMail: return localized("name", "Open Mail")
         case .quickTimer: return localized("name", "Quick Timer")
+        case .nearbyShare: return localized("name", "Nearby Share")
         case .geminiLiveEnabled: return localized("name", "Gemini Live")
         case .geminiLiveTalk: return localized("name", "Gemini Live: Voice")
         case .geminiScreenFrames: return localized("name", "Gemini Live: Screen")
@@ -255,6 +257,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .launchCalendar: return localized("desc", "Launch the Calendar app")
         case .launchMail: return localized("desc", "Launch the Mail app")
         case .quickTimer: return localized("desc", "Enable quick timers; the countdown shows on the island")
+        case .nearbyShare: return localized("desc", "Share text snippets between Lanterns on this network")
         case .geminiLiveEnabled: return localized("desc", "Chat with Google Gemini; the reply shows on the island")
         case .geminiLiveTalk: return localized("desc", "Switch the session to voice: talk and hear replies")
         case .geminiScreenFrames: return localized("desc", "Send periodic screen frames to the Live session (needs Screen Recording permission)")
