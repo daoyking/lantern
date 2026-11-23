@@ -752,7 +752,8 @@ do {
     print("▶31 Gemini Live")
     // setup 帧：模型、TEXT 模态、可选 systemInstruction
     let setupData = GeminiLiveSession.setupMessage(config: .init(
-        apiKey: "k", model: "gemini-2.0-flash-live-001", systemPrompt: "be brief"))
+        apiKey: "k", model: "gemini-2.0-flash-live-001",
+        modality: .text, voiceName: nil, systemPrompt: "be brief"))
     let setupObj = try JSONSerialization.jsonObject(with: setupData) as! [String: Any]
     let setup = setupObj["setup"] as! [String: Any]
     Check.that(setup["model"] as? String == "models/gemini-2.0-flash-live-001",
@@ -764,7 +765,7 @@ do {
     Check.that(((si["parts"] as! [[String: Any]])[0])["text"] as? String == "be brief",
                "setup 帧应携带 systemInstruction")
     let setupNoPrompt = GeminiLiveSession.setupMessage(
-        config: .init(apiKey: "k", model: "m", systemPrompt: nil))
+        config: .init(apiKey: "k", model: "m", modality: .text, voiceName: nil, systemPrompt: nil))
     let noPromptObj = try JSONSerialization.jsonObject(with: setupNoPrompt) as! [String: Any]
     Check.that((noPromptObj["setup"] as! [String: Any])["systemInstruction"] == nil,
                "无 system prompt 时 setup 帧不应带 systemInstruction")
@@ -817,6 +818,79 @@ do {
     Check.that(gemini.model == GeminiLiveService.defaultModel, "未设模型应回默认")
     Check.that(!gemini.isOpen, "未连接时 isOpen 为 false")
     UserDefaults.standard.removeObject(forKey: DefaultsKey.geminiAPIKey.rawValue)
+}
+
+
+// ▶32 Gemini Live M2：语音 setup 帧/音频解析/PCM 转换/接线
+do {
+    print("▶32 Gemini Live M2")
+    // 音频 setup 帧：AUDIO 模态 + 声音名 + 双向转写
+    let audioSetup = GeminiLiveSession.setupMessage(config: .init(
+        apiKey: "k", model: "gemini-2.5-flash-native-audio-preview-12-2025",
+        modality: .audio, voiceName: "Aoede", systemPrompt: nil))
+    let obj = try JSONSerialization.jsonObject(with: audioSetup) as! [String: Any]
+    let setup = obj["setup"] as! [String: Any]
+    let gen = setup["generationConfig"] as! [String: Any]
+    Check.that((gen["responseModalities"] as? [String]) == ["AUDIO"], "语音 setup 应声明 AUDIO 模态")
+    let speech = gen["speechConfig"] as! [String: Any]
+    let voiceCfg = speech["voiceConfig"] as! [String: Any]
+    let prebuilt = voiceCfg["prebuiltVoiceConfig"] as! [String: Any]
+    Check.that(prebuilt["voiceName"] as? String == "Aoede", "语音 setup 应带 Aoede 声音")
+    Check.that(setup["inputAudioTranscription"] != nil && setup["outputAudioTranscription"] != nil,
+               "语音 setup 应开双向转写")
+
+    // realtimeInput 上行帧
+    let up = GeminiLiveSession.realtimeAudioMessage(pcm16: Data([0x01, 0x02]))
+    let upObj = try JSONSerialization.jsonObject(with: up) as! [String: Any]
+    let ri = upObj["realtimeInput"] as! [String: Any]
+    let audio = ri["audio"] as! [String: Any]
+    Check.that(audio["mimeType"] as? String == "audio/pcm;rate=16000" &&
+               audio["data"] as? String == Data([0x01, 0x02]).base64EncodedString(),
+               "上行帧应为 16k PCM + base64")
+
+    // 下行音频解析（用序列化构造帧，避免裸字符串引号拼接）
+    let payload = Data([0x10, 0x20]).base64EncodedString()
+    let downFrame: [String: Any] = ["serverContent": [
+        "modelTurn": ["parts": [["inlineData": [
+            "mimeType": "audio/pcm;rate=24000",
+            "data": payload,
+        ]]]]
+    ]]
+    let ev = GeminiLiveSession.parseServer(try! JSONSerialization.data(withJSONObject: downFrame))
+    Check.that(ev == .modelAudio(base64: payload, mimeType: "audio/pcm;rate=24000"),
+               "inlineData 音频应解析为 modelAudio")
+    Check.that(GeminiLiveSession.parseServer(Data(
+        #"{"serverContent":{"inputTranscription":{"text":"你好"}}}"#.utf8))
+        == .inputTranscription("你好"), "inputTranscription 解析")
+
+    // mimeType 速率解析
+    Check.that(GeminiAudioPipe.pcmRate(fromMimeType: "audio/pcm;rate=24000") == 24000 &&
+               GeminiAudioPipe.pcmRate(fromMimeType: "audio/L16;rate=16000") == 16000 &&
+               GeminiAudioPipe.pcmRate(fromMimeType: "audio/pcm") == nil,
+               "pcmRate 应从 mimeType 提取速率")
+
+    // Int16 → Float32 缓冲
+    let samples: [Int16] = [0, 16384, -16384, 32767, -32768]
+    let buf = GeminiAudioPipe.floatBuffer(
+        fromPCM16: samples.withUnsafeBufferPointer { Data(buffer: $0) }, sampleRate: 24000)
+    Check.that(buf != nil && buf?.frameLength == 5 &&
+               abs(buf!.floatChannelData![0][1] - 0.5) < 0.01 &&
+               abs(buf!.floatChannelData![0][4] - (-1.0)) < 0.001,
+               "Int16 PCM 应转 Float32 并归一化")
+
+    // 接线：geminiLiveTalk = tools 状态型；voice gate 翻转 voiceMode
+    Check.that(AppFeature.geminiLiveTalk.group == .tools &&
+               FeatureCatalog.shared.metadata(for: .geminiLiveTalk).implementation == .native &&
+               !FeatureCatalog.shared.metadata(for: .geminiLiveTalk).isAction,
+               "geminiLiveTalk 应为 tools 组状态型 native")
+    let voice = GeminiVoiceService.shared
+    try voice.start()
+    Check.that(GeminiLiveService.shared.voiceMode == true, "voice gate start 应切语音模式")
+    try voice.stop()
+    Check.that(GeminiLiveService.shared.voiceMode == false, "voice gate stop 应回文本模式")
+    Check.that(!DefaultsKey.geminiVoiceModel.rawValue.isEmpty &&
+               GeminiLiveService.shared.voiceModel == GeminiLiveService.defaultVoiceModel,
+               "语音模型键齐备且回默认")
 }
 
 cleanFeaturePrefs()

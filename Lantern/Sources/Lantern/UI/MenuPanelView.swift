@@ -142,8 +142,8 @@ struct MenuPanelView: View {
                         if group == .sound, let perApp = PerAppAudioService.shared {
                             PerAppAudioSection(service: perApp)
                         }
-                        if group == .tools, let gemini = GeminiLiveService.shared {
-                            GeminiSection(service: gemini)
+                        if group == .tools {
+                            GeminiSection(service: GeminiLiveService.shared)
                         }
                         ForEach(features, id: \.self) { feature in
                             FeatureRow(feature: feature)
@@ -835,10 +835,12 @@ struct GeminiSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: "sparkles")
+                Image(systemName: service.voiceMode ? "waveform" : "sparkles")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(PanelSurface.accent)
-                Text(L("feature.geminiLiveEnabled.name", "Gemini Live"))
+                    .foregroundStyle(service.voiceMode ? Color.cyan : PanelSurface.accent)
+                Text(service.voiceMode
+                     ? L("gemini.voice.on", "Voice mode — just talk")
+                     : L("feature.geminiLiveEnabled.name", "Gemini Live"))
                     .font(.system(size: 12, weight: .semibold))
                 Spacer()
                 stateBadge
@@ -846,6 +848,8 @@ struct GeminiSection: View {
 
             if storedKey.isEmpty {
                 hintBox
+            } else if service.voiceMode {
+                replyArea
             } else {
                 replyArea
                 inputRow

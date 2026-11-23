@@ -73,6 +73,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
     case quickTimer = "quickTimer"
     case focusMode = "focusMode"
     case geminiLiveEnabled = "geminiLiveEnabled"
+    case geminiLiveTalk = "geminiLiveTalk"
 
     // ── Dynamic Island ───────────────────────────────────────────────
     case dynamicIslandEnabled = "dynamicIslandEnabled"
@@ -121,7 +122,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
             return .energyDisplay
         case .keepAwake, .portControl, .processKiller,
              .fileShredder, .colorPicker, .eyeBreak, .quickTimer, .focusMode,
-             .geminiLiveEnabled:
+             .geminiLiveEnabled, .geminiLiveTalk:
             return .tools
         case .dynamicIslandEnabled, .dynamicIslandShowCPU, .dynamicIslandShowBattery,
              .dynamicIslandShowVolume, .dynamicIslandShowTime, .dynamicIslandShowDate,
@@ -188,6 +189,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .launchMail: return localized("name", "Open Mail")
         case .quickTimer: return localized("name", "Quick Timer")
         case .geminiLiveEnabled: return localized("name", "Gemini Live")
+        case .geminiLiveTalk: return localized("name", "Gemini Live: Voice")
         case .dynamicIslandShowGemini: return localized("name", "Island: Gemini")
         case .focusMode: return localized("name", "Focus Session")
         case .timerStart5: return localized("name", "Timer 5 min")
@@ -252,6 +254,7 @@ public enum AppFeature: String, CaseIterable, Identifiable {
         case .launchMail: return localized("desc", "Launch the Mail app")
         case .quickTimer: return localized("desc", "Enable quick timers; the countdown shows on the island")
         case .geminiLiveEnabled: return localized("desc", "Chat with Google Gemini; the reply shows on the island")
+        case .geminiLiveTalk: return localized("desc", "Switch the session to voice: talk and hear replies")
         case .dynamicIslandShowGemini: return localized("desc", "Show the Gemini reply snippet in the island")
         case .focusMode: return localized("desc", "25-minute focus session on the island; tries to mute notifications (legacy hook)")
         case .timerStart5: return localized("desc", "Start a 5-minute timer (tap again to cancel)")

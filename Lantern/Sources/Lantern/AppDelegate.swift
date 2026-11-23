@@ -356,6 +356,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Gemini Live — toggle connects/disconnects the Live session.
         runtime.register(.geminiLiveEnabled, service: GeminiLiveService.shared, binding: {})
+        runtime.register(.geminiLiveTalk, service: GeminiVoiceService.shared, binding: {})
 
         // Bluetooth radar — toggle runs a CoreBluetooth nearby scan.
         runtime.register(.bluetoothRadar, service: BluetoothRadarService.shared, binding: {})

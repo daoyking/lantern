@@ -223,7 +223,7 @@ struct DynamicIslandFace: View {
         case .gemini:
             if gemini.isOpen {
                 VStack(spacing: 2) {
-                    Image(systemName: "sparkles")
+                    Image(systemName: gemini.voiceMode ? "waveform" : "sparkles")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.cyan)
                     Text(replySnippet)

@@ -386,6 +386,11 @@ public final class FeatureCatalog {
             displayPriority: 11,
             implementation: .native
         )
+        // Voice mode: switches the shared session to the native-audio model.
+        map[.geminiLiveTalk] = FeatureMetadata(
+            displayPriority: 19,
+            implementation: .native
+        )
         // Bluetooth radar: CoreBluetooth scan of nearby advertising devices.
         map[.bluetoothRadar] = FeatureMetadata(displayPriority: 5, implementation: .native)
         // File shelf + download watch: clipboard-tab file domain.

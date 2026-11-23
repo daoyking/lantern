@@ -322,3 +322,6 @@
 "gemini.placeholder" = "问点什么…";
 "gemini.send" = "发送";
 "gemini.empty" = "尚未对话";
+"feature.geminiLiveTalk.name" = "Gemini Live：语音";
+"feature.geminiLiveTalk.desc" = "切换到语音模式：直接说话并听到回复";
+"gemini.voice.on" = "语音模式：直接开讲";

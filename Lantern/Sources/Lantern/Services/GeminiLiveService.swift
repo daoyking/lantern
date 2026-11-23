@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Combine
 
@@ -19,15 +20,21 @@ final class GeminiLiveSession: NSObject {
     enum ServerEvent: Equatable {
         case setupComplete
         case modelText(String)
+        case modelAudio(base64: String, mimeType: String)
         case turnComplete
         case interrupted
+        case inputTranscription(String)
         case outputTranscription(String, finished: Bool)
         case error(String)
     }
 
+    enum Modality { case text, audio }
+
     struct Config {
         let apiKey: String
         let model: String
+        let modality: Modality
+        let voiceName: String?
         let systemPrompt: String?
     }
 
@@ -46,14 +53,41 @@ final class GeminiLiveSession: NSObject {
     // MARK: - Frame builders (exposed for tests)
 
     static func setupMessage(config: Config) -> Data {
+        let modalities: [String]
+        switch config.modality {
+        case .text: modalities = ["TEXT"]
+        case .audio: modalities = ["AUDIO"]
+        }
+        var generation: [String: Any] = ["responseModalities": modalities]
+        if config.modality == .audio, let voice = config.voiceName {
+            generation["speechConfig"] = [
+                "voiceConfig": ["prebuiltVoiceConfig": ["voiceName": voice]]
+            ]
+        }
         var setup: [String: Any] = [
             "model": "models/\(config.model)",
-            "generationConfig": ["responseModalities": ["TEXT"]],
+            "generationConfig": generation,
         ]
+        if config.modality == .audio {
+            setup["inputAudioTranscription"] = [:]
+            setup["outputAudioTranscription"] = [:]
+        }
         if let prompt = config.systemPrompt, !prompt.isEmpty {
             setup["systemInstruction"] = ["parts": [["text": prompt]]]
         }
         return try! JSONSerialization.data(withJSONObject: ["setup": setup])
+    }
+
+    /// Uplink audio chunk: `{"realtimeInput":{"audio":{"mimeType":"audio/pcm;rate=16000","data":...}}}`
+    static func realtimeAudioMessage(pcm16: Data) -> Data {
+        try! JSONSerialization.data(withJSONObject: [
+            "realtimeInput": [
+                "audio": [
+                    "mimeType": "audio/pcm;rate=16000",
+                    "data": pcm16.base64EncodedString(),
+                ]
+            ]
+        ])
     }
 
     static func clientContentMessage(text: String) -> Data {
@@ -85,6 +119,18 @@ final class GeminiLiveSession: NSObject {
            let parts = turn["parts"] as? [[String: Any]] {
             let text = parts.compactMap { $0["text"] as? String }.joined()
             if !text.isEmpty { return .modelText(text) }
+            for part in parts {
+                guard let inline = part["inlineData"] as? [String: Any] else { continue }
+                let mime = (inline["mimeType"] as? String) ?? ""
+                if mime.lowercased().contains("audio"),
+                   let payload = inline["data"] as? String, !payload.isEmpty {
+                    return .modelAudio(base64: payload, mimeType: mime)
+                }
+            }
+        }
+        if let input = content["inputTranscription"] as? [String: Any],
+           let text = input["text"] as? String, !text.isEmpty {
+            return .inputTranscription(text)
         }
         if let transcription = content["outputTranscription"] as? [String: Any],
            let text = transcription["text"] as? String {
@@ -141,7 +187,11 @@ final class GeminiLiveSession: NSObject {
     }
 
     func sendText(_ text: String) {
-        task?.send(.data(Self.clientContentMessage(text: text))) { [weak self] error in
+        send(.data(Self.clientContentMessage(text: text)))
+    }
+
+    func send(_ message: URLSessionWebSocketTask.Message) {
+        task?.send(message) { [weak self] error in
             if let error { self?.close(reason: error.localizedDescription) }
         }
     }
@@ -172,11 +222,22 @@ final class GeminiLiveService: BaseFeatureService {
     @Published public private(set) var sessionState: GeminiLiveSession.State = .idle
     @Published public private(set) var streamingReply: String = ""
     @Published public private(set) var lastReply: String?
+    @Published public private(set) var voiceMode = false
+
+    /// Native-audio voice model; TEXT models reject AUDIO modality.
+    static let defaultVoiceModel = "gemini-2.5-flash-native-audio-preview-12-2025"
+    static let defaultVoiceName = "Aoede"
 
     private var session: GeminiLiveSession?
+    private let audioPipe = GeminiAudioPipe()
+
+    public var voiceModel: String {
+        UserDefaults.standard.string(forKey: DefaultsKey.geminiVoiceModel.rawValue)
+            ?? Self.defaultVoiceModel
+    }
 
     override init(feature: AppFeature) { super.init(feature: feature) }
-    deinit { session?.close() }
+    deinit { session?.close(); audioPipe.stopCapture() }
 
     // MARK: Key/model access
 
@@ -204,17 +265,29 @@ final class GeminiLiveService: BaseFeatureService {
         let session = GeminiLiveSession()
         session.onState = { [weak self] state in self?.sessionState = state }
         session.onEvent = { [weak self] event in self?.handle(event) }
+        if voiceMode {
+            audioPipe.onChunk = { [weak session] chunk in
+                session?.send(.data(GeminiLiveSession.realtimeAudioMessage(pcm16: chunk)))
+            }
+        }
         session.connect(config: .init(
             apiKey: key,
-            model: model,
+            model: voiceMode ? voiceModel : model,
+            modality: voiceMode ? .audio : .text,
+            voiceName: voiceMode ? Self.defaultVoiceName : nil,
             systemPrompt: Self.systemPrompt
         ))
         self.session = session
+        if voiceMode {
+            try? audioPipe.startCapture()
+        }
     }
 
     override public func stop() throws {
         session?.close()
         session = nil
+        audioPipe.stopCapture()
+        audioPipe.stopPlayback()
         sessionState = .idle
     }
 
@@ -227,19 +300,56 @@ final class GeminiLiveService: BaseFeatureService {
         session?.sendText(trimmed)
     }
 
+    /// Voice gate (geminiLiveTalk): flips the session between the text
+    /// model and the native-audio model. Reconnects when already open.
+    public func setVoiceMode(_ on: Bool) {
+        guard voiceMode != on else { return }
+        voiceMode = on
+        if session != nil {
+            session?.close()
+            session = nil
+            audioPipe.stopCapture()
+            try? start()
+        }
+    }
+
     private func handle(_ event: GeminiLiveSession.ServerEvent) {
         switch event {
         case .modelText(let text):
             streamingReply += text
+        case .modelAudio(let base64, let mimeType):
+            guard let payload = Data(base64Encoded: base64),
+                  let rate = GeminiAudioPipe.pcmRate(fromMimeType: mimeType)
+            else { return }
+            if !streamingReply.isEmpty { lastReply = streamingReply }
+            streamingReply = ""
+            audioPipe.play(pcm16: payload, sampleRate: rate)
         case .turnComplete:
             if !streamingReply.isEmpty { lastReply = streamingReply }
             streamingReply = ""
         case .interrupted:
             streamingReply = ""
+            audioPipe.stopPlayback()
+        case .inputTranscription(let text):
+            streamingReply += text
         case .error(let message):
             sessionState = .closed(message)
         case .setupComplete, .outputTranscription:
             break
         }
     }
+}
+
+
+// MARK: - Voice gate (separate feature, same pipeline)
+
+/// `geminiLiveTalk` toggle: switches the shared Gemini session between
+/// text mode and native-audio voice mode. Registered in AppDelegate.
+final class GeminiVoiceService: BaseFeatureService {
+    static let shared = GeminiVoiceService(feature: .geminiLiveTalk)
+
+    override init(feature: AppFeature) { super.init(feature: feature) }
+
+    override public func start() throws { GeminiLiveService.shared.setVoiceMode(true) }
+    override public func stop() throws { GeminiLiveService.shared.setVoiceMode(false) }
 }

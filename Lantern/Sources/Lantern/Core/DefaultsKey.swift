@@ -47,6 +47,7 @@ public enum DefaultsKey: String {
     case islandShowGemini = "lantern_island_show_gemini"
     case geminiAPIKey = "lantern_gemini_api_key"
     case geminiModel = "lantern_gemini_model"
+    case geminiVoiceModel = "lantern_gemini_voice_model"
     
     // MARK: - Panel State
     case panelVisible = "lantern_panel_visible"
